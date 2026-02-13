@@ -1,0 +1,14 @@
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Spring 2023
+MAT116,Pre-Calculus,0,B,Spring 2023
+CSE115,Programming Language I,4,A-,Summer 2023
+CSE115L,Programming Language I Lab,0,A,Summer 2023
+HIS103,Emergence of Bangladesh,3,F,Summer 2023
+PHY107,Physics I,3,C+,Fall 2023
+PHY107L,Physics I Lab,1,B,Fall 2023
+CSE173,Discrete Mathematics,3,W,Fall 2023
+MAT120,Calculus I,3,B-,Spring 2024
+HIS103,Emergence of Bangladesh,3,B+,Spring 2024
+CSE215,Programming Language II,4,A,Summer 2024
+CSE215L,Programming Language II Lab,0,A,Summer 2024
+CSE225,Data Structures and Algorithm,3,F,Fall 2024

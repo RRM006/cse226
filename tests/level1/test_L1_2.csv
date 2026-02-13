@@ -1,0 +1,46 @@
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Spring2023
+ENG103,Intermediate Composition,3,B+,Fall2023
+ENG111,Public Speaking,3,A,Spring2024
+BAN205,Bangla Language,3,B,Fall2024
+PHI104,Introduction to Ethics,3,A-,Spring2025
+HIS102,Introduction to World Civilization,3,B+,Fall2025
+HIS103,Emergence of Bangladesh,3,A,Spring2023
+ECO101,Introduction to Microeconomics,3,A-,Fall2023
+POL101,Introduction to Political Science,3,B,Spring2024
+SOC101,Introduction to Sociology,3,B+,Fall2024
+BIO103,Biology,4,A,Spring2024
+PHY107,Physics I,4,A-,Fall2024
+CHE101,Chemistry I,4,B+,Spring2025
+MAT116,Pre-Calculus,0,B,Spring2023
+MAT120,Calculus I,3,B,Fall2023
+MAT130,Calculus II,3,B+,Spring2024
+MAT250,Calculus III,3,A,Fall2024
+MAT361,Probability and Statistics,3,F,Spring2025
+MAT125,Linear Algebra,3,A,Fall2024
+MAT350,Engineering Mathematics,3,B+,Spring2025
+EEE452,Engineering Economics,3,B,Fall2025
+CEE110,Engineering Drawing,1,A,Spring2023
+CSE115,Programming Language I,3,A,Spring2023
+CSE115L,Programming Language I Lab,1,A,Spring2023
+CSE173,Discrete Mathematics,3,W,Fall2023
+CSE215,Programming Language II,3,A-,Spring2024
+CSE215L,Programming Language II Lab,1,A,Spring2024
+CSE225,Data Structures and Algorithm,3,B+,Fall2024
+CSE231,Digital Logic Design,3,A,Spring2025
+EEE141,Electrical Circuits I,3,B,Spring2024
+EEE141L,Electrical Circuits I Lab,1,B+,Spring2024
+EEE111,Analog Electronics I,3,B,Fall2024
+CSE311,Database Systems,3,W,Spring2025
+CSE323,Operating Systems Design,3,A,Fall2025
+CSE327,Software Engineering,3,B+,Spring2025
+CSE331,Microprocessor Interfacing,3,B,Fall2025
+CSE373,Design and Analysis of Algorithms,3,A-,Spring2025
+CSE332,Computer Organization,3,B+,Fall2025
+CSE425,Concepts of Programming Language,3,A,Spring2026
+CSE299,Junior Design Project I,1,A,Fall2024
+CSE499A,Senior Design Project I,1.5,A,Spring2025
+CSE499B,Senior Design Project II,1.5,A,Fall2025
+CSE401,Advanced Programming Techniques,3,A,Spring2025
+CSE411,Software Architecture,3,B+,Fall2025
+CSE422,Computer Networks,3,B,Spring2026
