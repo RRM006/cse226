@@ -2,6 +2,7 @@
 """
 NSU Audit Core - Level 2: CGPA Calculator & Waiver Handler
 Calculates weighted CGPA using NSU grading scale, handles retakes and waivers.
+Supports BSCSE, BSEEE, and LL.B Honors programs.
 """
 
 import csv
@@ -18,6 +19,22 @@ GRADE_POINTS = {
 }
 
 CGPA_EXCLUDE_GRADES = {'F', 'I', 'W', 'X'}
+
+
+def detect_program(courses):
+    """Auto-detect program from course codes."""
+    has_llb = any('LLB' in c['course_code'] for c in courses)
+    has_cse = any('CSE' in c['course_code'] for c in courses)
+    has_eee = any('EEE' in c['course_code'] for c in courses)
+    
+    if has_llb:
+        return 'LLB'
+    elif has_cse:
+        return 'BSCSE'
+    elif has_eee:
+        return 'BSEEE'
+    else:
+        return 'BSCSE'
 
 
 def load_transcript(transcript_path):
@@ -131,12 +148,13 @@ def get_academic_standing(cgpa):
         return "PROBATION - Not Eligible for Graduation"
 
 
-def generate_report(result, retake_info, waivers, transcript_path):
+def generate_report(result, retake_info, waivers, transcript_path, program='BSCSE'):
     """Generate formatted CGPA calculation report."""
     print("=" * 50)
     print("=== NSU AUDIT CORE - LEVEL 2 ===")
     print("=== CGPA CALCULATOR & WAIVER HANDLER ===")
     print("=" * 50)
+    print(f"Program: {program}")
     print(f"Processing: {transcript_path}")
     
     if waivers:
@@ -163,20 +181,26 @@ def generate_report(result, retake_info, waivers, transcript_path):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python level2_cgpa_calculator.py <transcript.csv>")
+        print("Usage: python level2_cgpa_calculator.py <transcript.csv> [program]")
+        print("  program: BSCSE, BSEEE, or LLB (auto-detected if not specified)")
         sys.exit(1)
 
     transcript_path = sys.argv[1]
+    program = sys.argv[2].upper() if len(sys.argv) > 2 else None
 
     if not Path(transcript_path).exists():
         print(f"Error: File not found: {transcript_path}")
         sys.exit(1)
 
     courses = load_transcript(transcript_path)
+    
+    if program is None:
+        program = detect_program(courses)
+    
     waivers = get_waivers_from_user()
     processed_courses, retake_info = process_retakes(courses)
     result = calculate_cgpa(processed_courses, waivers)
-    generate_report(result, retake_info, waivers, transcript_path)
+    generate_report(result, retake_info, waivers, transcript_path, program)
 
 
 if __name__ == '__main__':

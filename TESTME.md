@@ -116,26 +116,34 @@ The project has 27 test files. Each file represents a different student scenario
 ### Level 1 Tests (Credit Counting):
 | File | What it Tests |
 |------|---------------|
-| `tests/level1/test_L1_1.csv` | Student with all good grades (130 credits) |
-| `tests/level1/test_L1_2.csv` | Student with some F grades |
-| `tests/level1/test_L1_3.csv` | Student with incomplete (I) and withdrawn (W) courses |
-| `tests/level1/test_L1_4.csv` | Student with 0-credit labs |
+| `tests/level1/bscse/test_bscse_standard.csv` | BSCSE standard student |
+| `tests/level1/bscse/test_bscse_mixed_grades.csv` | BSCSE mixed grades |
+| `tests/level1/bscse/test_bscse_with_failures.csv` | BSCSE with F grades |
+| `tests/level1/bscse/test_bscse_all_A.csv` | BSCSE all A grades |
+| `tests/level1/bscse/test_bscse_invalid_grades.csv` | BSCSE I, W, X grades |
+| `tests/level1/bseee/test_bseee_standard.csv` | BSEEE standard student |
+| `tests/level1/bseee/test_bseee_with_failures.csv` | BSEEE with F grades |
+| `tests/level1/law/test_law_standard.csv` | Law standard student |
+| `tests/level1/law/test_law_ged_incomplete.csv` | Law GED incomplete |
 
 ### Level 2 Tests (CGPA Calculation):
 | File | What it Tests |
 |------|---------------|
-| `tests/level2/test_L2_1.csv` | Normal CGPA calculation |
-| `tests/level2/test_L2_2.csv` | Student who retook courses |
-| `tests/level2/test_L2_3.csv` | Student with course waivers |
-| `tests/level2/test_L2_4.csv` | Complex: retakes + waivers + F grades |
+| `tests/level2/bscse/test_bscse_standard.csv` | BSCSE normal CGPA |
+| `tests/level2/bscse/test_bscse_retakes.csv` | BSCSE with retakes |
+| `tests/level2/bseee/test_bseee_standard.csv` | BSEEE normal CGPA |
+| `tests/level2/law/test_law_standard.csv` | Law normal CGPA |
 
 ### Level 3 Tests (Full Audit):
 | File | What it Tests |
 |------|---------------|
-| `tests/level3/test_L3_1.csv` | Perfect student - can graduate |
-| `tests/level3/test_L3_2.csv` | Missing some required courses |
-| `tests/level3/test_L3_3.csv` | Low CGPA (below 2.0 - probation) |
-| `tests/level3/test_L3_4.csv` | Elective trail requirement not met |
+| `tests/level3/bscse/test_bscse_complete.csv` | BSCSE graduation ready |
+| `tests/level3/bscse/test_bscse_missing_electives.csv` | BSCSE missing electives |
+| `tests/level3/bscse/test_bscse_probation.csv` | BSCSE low CGPA |
+| `tests/level3/bseee/test_bseee_complete.csv` | BSEEE graduation ready |
+| `tests/level3/law/test_law_complete.csv` | Law graduation ready |
+| `tests/level3/law/test_law_missing_dissertation.csv` | Law missing LLB407 |
+| `tests/level3/law/test_law_probation.csv` | Law low CGPA |
 
 ---
 
@@ -287,6 +295,11 @@ python src/level3_audit_engine.py tests/level3/test_L3_1.csv data/program_knowle
 python src/level3_audit_engine.py tests/level3/test_edge_bseee_complete.csv data/program_knowledge_BSEEE.md
 ```
 
+### For LL.B Honors (Law):
+```bash
+python src/level3_audit_engine.py tests/level3/law/test_L3_law_complete.csv data/program_knowledge_LLB.md
+```
+
 ---
 
 ## Step 9: Understanding Grade System
@@ -346,20 +359,30 @@ python src/level3_audit_engine.py tests/level3/test_L3_4.csv data/program_knowle
 All commands to copy-paste:
 
 ```bash
-# Level 1 - Count Credits
-python src/level1_credit_tally.py tests/level1/test_L1_1.csv
-python src/level1_credit_tally.py tests/level1/test_L1_2.csv
-python src/level1_credit_tally.py tests/level1/test_L1_3.csv
-python src/level1_credit_tally.py tests/level1/test_L1_4.csv
+# Level 1 - Credit Tally (BSCSE)
+python src/level1_credit_tally.py tests/level1/bscse/test_bscse_standard.csv
+python src/level1_credit_tally.py tests/level1/bscse/test_bscse_mixed_grades.csv
+python src/level1_credit_tally.py tests/level1/bscse/test_bscse_with_failures.csv
+python src/level1_credit_tally.py tests/level1/bscse/test_bscse_all_A.csv
 
-# Level 2 - Calculate CGPA (press Enter when asked)
-python src/level2_cgpa_calculator.py tests/level2/test_L2_1.csv
-python src/level2_cgpa_calculator.py tests/level2/test_L2_2.csv
+# Level 1 - Credit Tally (BSEEE)
+python src/level1_credit_tally.py tests/level1/bseee/test_bseee_standard.csv
+
+# Level 1 - Credit Tally (Law)
+python src/level1_credit_tally.py tests/level1/law/test_law_standard.csv
+
+# Level 2 - CGPA Calculator (press Enter when asked)
+python src/level2_cgpa_calculator.py tests/level2/bscse/test_bscse_standard.csv
+python src/level2_cgpa_calculator.py tests/level2/bscse/test_bscse_retakes.csv
+python src/level2_cgpa_calculator.py tests/level2/bseee/test_bseee_standard.csv
+python src/level2_cgpa_calculator.py tests/level2/law/test_law_standard.csv
 
 # Level 3 - Full Audit (press Enter when asked)
-python src/level3_audit_engine.py tests/level3/test_L3_1.csv data/program_knowledge_BSCSE.md
-python src/level3_audit_engine.py tests/level3/test_L3_3.csv data/program_knowledge_BSEEE.md
-python src/level3_audit_engine.py tests/level3/test_edge_bseee_complete.csv data/program_knowledge_BSEEE.md
+python src/level3_audit_engine.py tests/level3/bscse/test_bscse_complete.csv data/program_knowledge_BSCSE.md
+python src/level3_audit_engine.py tests/level3/bscse/test_bscse_probation.csv data/program_knowledge_BSCSE.md
+python src/level3_audit_engine.py tests/level3/bseee/test_bseee_complete.csv data/program_knowledge_BSEEE.md
+python src/level3_audit_engine.py tests/level3/law/test_law_complete.csv data/program_knowledge_LLB.md
+python src/level3_audit_engine.py tests/level3/law/test_law_missing_dissertation.csv data/program_knowledge_LLB.md
 ```
 
 ---

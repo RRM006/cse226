@@ -1,8 +1,8 @@
-# Testing Plan - NSU Audit Core System
+# Testing Plan - NSU Audit Core System v2.0
 
 ## Overview
 
-This document outlines the testing strategy, test coverage, and validation criteria for the NSU Audit Core System.
+This document outlines the testing strategy, test coverage, and validation criteria for the NSU Audit Core System version 2.0.
 
 ## Test Strategy
 
@@ -16,53 +16,47 @@ This document outlines the testing strategy, test coverage, and validation crite
 
 | Category | Count | Purpose |
 |----------|-------|---------|
-| PRD-specified tests | 12 | Core functionality validation |
-| Edge case tests | 12 | Boundary conditions |
-| **Total** | **24** | |
+| BSCSE Tests | 11 | Computer Science program |
+| BSEEE Tests | 4 | Electrical Engineering program |
+| Law Tests | 7 | LL.B Honors program |
+| **Total** | **22** | |
 
 ## Test Case Inventory
 
-### Level 1: Credit Tally Engine (7 test files)
+### Level 1: Credit Tally Engine (9 test files)
 
-| Test File | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `test_L1_1.csv` | Standard successful student (130 credits, all A-D) | Total: 130 credits |
-| `test_L1_2.csv` | Mixed grades with failures (125 valid, 10 F, 5 W) | Total: 125 credits |
-| `test_L1_3.csv` | Incomplete and withdrawn (128 valid, 4 I, 3 X) | Total: 128 credits |
-| `test_L1_4.csv` | Zero-credit labs (130 + 6 labs) | Total: 130 credits, 6 labs |
-| `test_edge_all_A.csv` | All A grades - maximum CGPA scenario | Total: 130 credits |
-| `test_edge_all_F.csv` | All F grades - zero credits | Total: 0 credits |
-| `test_edge_mixed_invalid.csv` | Mix of I, W, X grades | Total: based on valid grades |
+| Test File | Description | Program | Expected Credits |
+|-----------|-------------|---------|-----------------|
+| `test_bscse_standard.csv` | Standard successful student | BSCSE | 123 |
+| `test_bscse_mixed_grades.csv` | Mixed grades | BSCSE | ~120 |
+| `test_bscse_with_failures.csv` | With F grades | BSCSE | <120 |
+| `test_bscse_all_A.csv` | All A grades | BSCSE | 123 |
+| `test_bscse_invalid_grades.csv` | I, W, X grades | BSCSE | ~110 |
+| `test_bseee_standard.csv` | Standard student | BSEEE | 114 |
+| `test_bseee_with_failures.csv` | With F grades | BSEEE | <114 |
+| `test_law_standard.csv` | Complete student | Law | 130 |
+| `test_law_ged_incomplete.csv` | GED incomplete | Law | <130 |
 
-### Level 2: CGPA Calculator (5 test files)
+### Level 2: CGPA Calculator (4 test files)
 
-| Test File | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `test_L2_1.csv` | Standard CGPA (50 A + 40 B+ + 30 B + 10 C) | CGPA: 3.40 |
-| `test_L2_2.csv` | Retake scenario (CSE115: D→A, MAT120: C→B+, CSE225: F→A-) | Best grades used |
-| `test_L2_3.csv` | Course waivers (ENG102, MAT116) | Waivers excluded from CGPA |
-| `test_L2_4.csv` | Complex (3 retakes + 2 waivers + F + W + I) | All conditions handled |
-| `test_edge_borderline_cgpa.csv` | CGPA just below 2.0 (probation) | CGPA: ~1.85 |
-| `test_edge_multiple_retakes.csv` | Multiple course retakes | Best grades used |
+| Test File | Description | Program | Expected CGPA |
+|-----------|-------------|---------|----------------|
+| `test_bscse_standard.csv` | Standard CGPA | BSCSE | ~3.64 |
+| `test_bscse_retakes.csv` | With retakes | BSCSE | Based on best grades |
+| `test_bseee_standard.csv` | Standard CGPA | BSEEE | ~3.5-4.0 |
+| `test_law_standard.csv` | Standard CGPA | Law | ~3.6 |
 
-### Level 3: Audit Engine (12 test files)
+### Level 3: Audit Engine (9 test files)
 
 | Test File | Description | Program | Expected Result |
 |-----------|-------------|---------|-----------------|
-| `test_L3_1.csv` | Graduation ready student | BSCSE | ELIGIBLE |
-| `test_L3_2.csv` | Missing core courses | BSCSE | NOT ELIGIBLE - missing CSE373, HIS103, MAT350 |
-| `test_L3_3.csv` | Probation status | BSEEE | NOT ELIGIBLE - CGPA < 2.0 |
-| `test_L3_4.csv` | Elective trail violation | BSCSE | NOT ELIGIBLE - 1 from each trail |
-| `test_edge_bseee_complete.csv` | Complete BSEEE student | BSEEE | ELIGIBLE |
-| `test_edge_missing_capstone.csv` | Missing capstone projects | BSCSE | NOT ELIGIBLE - missing 499A/499B |
-| `test_edge_extra_credits.csv` | Extra credits beyond 130 | BSCSE | ELIGIBLE |
-| `test_edge_missing_open_elective.csv` | Missing open elective | BSCSE | NOT ELIGIBLE |
-| `test_edge_dual_program_cse_ece.csv` | Both CSE and EEE courses | BSCSE | Check major core |
-| `test_edge_prerequisite_violation.csv` | Course before prerequisite | BSCSE | Flag in report |
-| `test_edge_eee_power_trail.csv` | EEE power system trail | BSEEE | ELIGIBLE |
-| `test_edge_single_elective_trail.csv` | Single trail only (1 course) | BSCSE | NOT ELIGIBLE |
-| `test_edge_ai_arch_trails.csv` | Two trails with 2+ each | BSCSE | ELIGIBLE |
-| `test_edge_open_elective.csv` | With open elective | BSCSE | ELIGIBLE |
+| `test_bscse_complete.csv` | Complete BSCSE | BSCSE | ELIGIBLE |
+| `test_bscse_missing_electives.csv` | Missing electives | BSCSE | NOT ELIGIBLE |
+| `test_bscse_probation.csv` | Low CGPA | BSCSE | NOT ELIGIBLE |
+| `test_bseee_complete.csv` | Complete BSEEE | BSEEE | ELIGIBLE |
+| `test_law_complete.csv` | Complete Law | Law | ELIGIBLE |
+| `test_law_missing_dissertation.csv` | Missing LLB407 | Law | NOT ELIGIBLE |
+| `test_law_probation.csv` | Low CGPA | Law | NOT ELIGIBLE |
 
 ## Program Coverage
 

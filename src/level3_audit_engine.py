@@ -2,6 +2,7 @@
 """
 NSU Audit Core - Level 3: Audit Engine & Deficiency Reporter
 Compares student transcript against program requirements and generates audit report.
+Supports BSCSE, BSEEE, and LL.B Honors programs.
 """
 
 import csv
@@ -19,6 +20,22 @@ GRADE_POINTS = {
 }
 
 CGPA_EXCLUDE_GRADES = {'F', 'I', 'W', 'X'}
+
+
+def detect_program(courses):
+    """Auto-detect program from course codes."""
+    has_llb = any('LLB' in c['course_code'] for c in courses)
+    has_cse = any('CSE' in c['course_code'] for c in courses)
+    has_eee = any('EEE' in c['course_code'] for c in courses)
+    
+    if has_llb:
+        return 'LLB'
+    elif has_cse:
+        return 'BSCSE'
+    elif has_eee:
+        return 'BSEEE'
+    else:
+        return 'BSCSE'
 
 
 def load_transcript(transcript_path):
@@ -52,7 +69,15 @@ def parse_program_knowledge(filepath):
         'capstone': [],
         'elective_trails': {},
         'open_elective': [],
-        'prerequisites': {}
+        'prerequisites': {},
+        'is_law': False,
+        'ged_group1': [],
+        'ged_group2': [],
+        'core_year1': [],
+        'core_year2': [],
+        'core_year3': [],
+        'core_year4': [],
+        'electives': []
     }
     
     lines = content.split('\n')
@@ -63,6 +88,9 @@ def parse_program_knowledge(filepath):
     while i < len(lines):
         line = lines[i].strip()
         
+        if 'LL.B' in line or 'LL.B Honors' in content:
+            program['is_law'] = True
+            
         if line.startswith('**Program Name:**'):
             program['name'] = line.split(':')[1].strip().replace('**', '')
         elif line.startswith('**Total Credits Required:**'):
@@ -71,33 +99,57 @@ def parse_program_knowledge(filepath):
             waivables = line.split(':')[1].strip()
             program['waivable_courses'] = {c.strip() for c in waivables.split(',')}
         
-        if line.startswith('## University Core'):
-            current_section = 'university_core'
-        elif line.startswith('## SEPS Core') or 'SEPS' in line:
-            current_section = 'seps_core'
-        elif line.startswith('## EEE Major Core') or line.startswith('## Major Core'):
-            current_section = 'major_core'
-        elif 'Capstone' in line:
-            current_section = 'capstone'
-        elif 'Elective Trails' in line or 'Specialized Elective' in line:
-            current_section = 'elective_trails'
-        elif 'Open Elective' in line:
-            current_section = 'open_elective'
-        elif 'Prerequisites' in line:
+        if program['is_law']:
+            if 'GED Group 1' in line and 'Credits' in line:
+                current_section = 'ged_group1'
+            elif 'GED Group 2' in line and 'Credits' in line:
+                current_section = 'ged_group2'
+            elif 'Core Program Year 1' in line:
+                current_section = 'core_year1'
+            elif 'Core Program Year 2' in line:
+                current_section = 'core_year2'
+            elif 'Core Program Year 3' in line:
+                current_section = 'core_year3'
+            elif 'Core Program Year 4' in line:
+                current_section = 'core_year4'
+            elif 'Electives' in line and 'Credits' in line:
+                current_section = 'electives'
+            elif line.startswith('## '):
+                current_section = None
+        else:
+            if line.startswith('## University Core'):
+                current_section = 'university_core'
+            elif 'SEPS' in line and 'Core' in line:
+                current_section = 'seps_core'
+            elif 'EEE Major Core' in line or line.startswith('## Major Core'):
+                current_section = 'major_core'
+            elif 'Capstone' in line:
+                current_section = 'capstone'
+            elif 'Elective Trails' in line or 'Specialized Elective' in line:
+                current_section = 'elective_trails'
+            elif 'Open Elective' in line:
+                current_section = 'open_elective'
+        
+        if 'Prerequisites' in line and line.startswith('##'):
             current_section = 'prerequisites'
         
         if line.startswith('### ') and current_section == 'elective_trails':
             trail_name = line.replace('###', '').strip()
             current_trail = trail_name
             program['elective_trails'][current_trail] = []
-        elif line.startswith('- ') and current_section and current_section != 'elective_trails':
-            course_match = re.match(r'- ([A-Z]{2,}\d{3}[A-Z]?):\s*(.+?)\s*\((\d+)\s*credits?\)', line)
-            if course_match:
-                code = course_match.group(1)
-                name = course_match.group(2)
-                credits = int(course_match.group(3))
-                course_entry = {'code': code, 'name': name, 'credits': credits}
-                
+        
+        course_match = re.match(r'- ([A-Z]{2,}\d{3}[A-Z]?):\s*(.+?)\s*\((\d+)\s*credits?\)', line)
+        if course_match:
+            code = course_match.group(1)
+            name = course_match.group(2)
+            credits = int(course_match.group(3))
+            course_entry = {'code': code, 'name': name, 'credits': credits}
+            
+            if program['is_law']:
+                if current_section in ['ged_group1', 'ged_group2', 'core_year1', 'core_year2', 
+                                       'core_year3', 'core_year4', 'electives']:
+                    program[current_section].append(course_entry)
+            else:
                 if current_section == 'elective_trails' and current_trail:
                     program['elective_trails'][current_trail].append(course_entry)
                 elif current_section == 'university_core':
@@ -192,8 +244,8 @@ def get_waivers_from_user():
     return {code.strip() for code in waiver_input.split(',') if code.strip()}
 
 
-def audit_program(program, completed_courses, cgpa, earned_credits, waivers):
-    """Audit completed courses against program requirements."""
+def audit_engineering_program(program, completed_courses, waivers):
+    """Audit Engineering programs (BSCSE, BSEEE)."""
     deficiencies = {
         'missing_courses': [],
         'missing_credits': 0,
@@ -250,6 +302,93 @@ def audit_program(program, completed_courses, cgpa, earned_credits, waivers):
     return deficiencies
 
 
+def audit_law_program(program, completed_courses, waivers):
+    """Audit Law program (LL.B Honors)."""
+    deficiencies = {
+        'ged_group1_missing': [],
+        'ged_group2_missing': False,
+        'ged_group2_taken': [],
+        'core_year1_missing': [],
+        'core_year2_missing': [],
+        'core_year3_missing': [],
+        'core_year4_missing': [],
+        'electives_missing': False,
+        'electives_count': 0,
+        'dissertation_missing': False,
+        'missing_credits': 0,
+        'total_missing': 0
+    }
+    
+    ged_group1_required = [c['code'] for c in program['ged_group1'] 
+                          if c['code'] in ['ENG102', 'ENG103', 'BEN205', 'HIS103']]
+    ged_group1_science = ['BIO103', 'PHY107', 'CHE101', 'PBH101']
+    
+    for req in ged_group1_required:
+        if req not in completed_courses and req not in waivers:
+            deficiencies['ged_group1_missing'].append(req)
+    
+    science_count = sum(1 for s in ged_group1_science if s in completed_courses)
+    if science_count < 1:
+        deficiencies['ged_group1_missing'].append("Science course (need 1)")
+    
+    ged_group2_options = [c['code'] for c in program['ged_group2']]
+    ged2_taken = [c for c in completed_courses if c in ged_group2_options]
+    deficiencies['ged_group2_taken'] = ged2_taken
+    
+    if len(ged2_taken) < 3:
+        deficiencies['ged_group2_missing'] = True
+        deficiencies['missing_credits'] += (3 - len(ged2_taken)) * 3
+    
+    alternatives = [('ECO101', 'ECO104'), ('POL101', 'POL104')]
+    for a1, a2 in alternatives:
+        if a1 in ged2_taken and a2 in ged2_taken:
+            deficiencies['ged_group2_missing'] = True
+    
+    for code in [c['code'] for c in program['core_year1']]:
+        if code not in completed_courses and code not in waivers:
+            deficiencies['core_year1_missing'].append(code)
+            deficiencies['missing_credits'] += 3
+    
+    for code in [c['code'] for c in program['core_year2']]:
+        if code not in completed_courses and code not in waivers:
+            deficiencies['core_year2_missing'].append(code)
+            deficiencies['missing_credits'] += 3
+    
+    for code in [c['code'] for c in program['core_year3']]:
+        if code not in completed_courses and code not in waivers:
+            deficiencies['core_year3_missing'].append(code)
+            deficiencies['missing_credits'] += 3
+    
+    for code in [c['code'] for c in program['core_year4']]:
+        if code not in completed_courses and code not in waivers:
+            deficiencies['core_year4_missing'].append(code)
+            deficiencies['missing_credits'] += 3
+    
+    llb_electives = [c['code'] for c in program['electives']]
+    completed_electives = [c for c in completed_courses if c in llb_electives]
+    deficiencies['electives_count'] = len(completed_electives)
+    
+    if len(completed_electives) < 8:
+        deficiencies['electives_missing'] = True
+        deficiencies['missing_credits'] += (8 - len(completed_electives)) * 3
+    
+    if 'LLB407' not in completed_courses:
+        deficiencies['dissertation_missing'] = True
+        deficiencies['missing_credits'] += 3
+    
+    deficiencies['total_missing'] = deficiencies['missing_credits']
+    
+    return deficiencies
+
+
+def audit_program(program, completed_courses, cgpa, earned_credits, waivers):
+    """Audit completed courses against program requirements."""
+    if program.get('is_law'):
+        return audit_law_program(program, completed_courses, waivers)
+    else:
+        return audit_engineering_program(program, completed_courses, waivers)
+
+
 def generate_audit_report(program, completed_courses, cgpa, earned_credits, deficiencies, transcript_path):
     """Generate comprehensive graduation audit report."""
     print("=" * 60)
@@ -267,41 +406,71 @@ def generate_audit_report(program, completed_courses, cgpa, earned_credits, defi
     print(f"  Academic Standing: {standing}")
     print()
     
-    print("DEFICIENCIES FOUND:")
-    
-    if deficiencies['missing_courses']:
-        print("\n  Missing Required Courses:")
-        by_category = {}
-        for mc in deficiencies['missing_courses']:
-            cat = mc['category']
-            if cat not in by_category:
-                by_category[cat] = []
-            by_category[cat].append(mc)
+    if program.get('is_law'):
+        print("DEFICIENCIES FOUND:")
         
-        for cat, courses in by_category.items():
-            print(f"    {cat}:")
-            for c in courses:
-                print(f"      - {c['code']} ({c['credits']} credits)")
-    
-    if deficiencies['elective_trail_violation']:
-        print("\n  Elective Trail Requirement: VIOLATION")
-        print("    Requirement: Minimum 2 courses (6 credits) from ONE trail")
-        print("    Action: Take 1 more elective from existing trail")
-    
-    if deficiencies['capstone_missing']:
-        print("\n  Missing Capstone Projects:")
-        for cap in deficiencies['capstone_missing']:
-            print(f"    - {cap}")
+        if deficiencies['ged_group1_missing']:
+            print("\n  GED Group 1 Incomplete:")
+            print(f"    Missing: {', '.join(deficiencies['ged_group1_missing'])}")
+        
+        if deficiencies['ged_group2_missing']:
+            print("\n  GED Group 2 Incomplete:")
+            print(f"    Taken: {len(deficiencies['ged_group2_taken'])}/3 courses")
+            if deficiencies['ged_group2_taken']:
+                print(f"    Courses: {', '.join(deficiencies['ged_group2_taken'])}")
+        
+        if deficiencies['core_year1_missing']:
+            print(f"\n  Core Year 1 Missing: {len(deficiencies['core_year1_missing'])} courses")
+        
+        if deficiencies['core_year2_missing']:
+            print(f"\n  Core Year 2 Missing: {len(deficiencies['core_year2_missing'])} courses")
+        
+        if deficiencies['core_year3_missing']:
+            print(f"\n  Core Year 3 Missing: {len(deficiencies['core_year3_missing'])} courses")
+        
+        if deficiencies['core_year4_missing']:
+            print(f"\n  Core Year 4 Missing: {len(deficiencies['core_year4_missing'])} courses")
+            if 'LLB407' in deficiencies['core_year4_missing']:
+                print("    *** LLB407 (Dissertation) REQUIRED ***")
+        
+        if deficiencies['electives_missing']:
+            print(f"\n  Electives: {deficiencies['electives_count']}/8 required")
+        
+        if deficiencies['dissertation_missing']:
+            print("\n  *** DISSERTATION (LLB407) REQUIRED FOR GRADUATION ***")
+    else:
+        print("DEFICIENCIES FOUND:")
+        
+        if deficiencies['missing_courses']:
+            print("\n  Missing Required Courses:")
+            by_category = {}
+            for mc in deficiencies['missing_courses']:
+                cat = mc['category']
+                if cat not in by_category:
+                    by_category[cat] = []
+                by_category[cat].append(mc)
+            
+            for cat, courses in by_category.items():
+                print(f"    {cat}:")
+                for c in courses:
+                    print(f"      - {c['code']} ({c['credits']} credits)")
+        
+        if deficiencies['elective_trail_violation']:
+            print("\n  Elective Trail Requirement: VIOLATION")
+            print("    Requirement: Minimum 2 courses from ONE trail")
+        
+        if deficiencies['capstone_missing']:
+            print("\n  Missing Capstone Projects:")
+            for cap in deficiencies['capstone_missing']:
+                print(f"    - {cap}")
     
     print(f"\n  Total Missing Credits: {deficiencies['total_missing']}")
     print()
     
-    is_eligible = (
-        deficiencies['total_missing'] == 0 and
-        not deficiencies['elective_trail_violation'] and
-        not deficiencies['capstone_missing'] and
-        cgpa >= 2.0
-    )
+    is_eligible = deficiencies['total_missing'] == 0 and cgpa >= 2.0
+    
+    if program.get('is_law'):
+        is_eligible = is_eligible and not deficiencies['dissertation_missing']
     
     if is_eligible:
         print("GRADUATION STATUS: ✓ ELIGIBLE")
@@ -313,11 +482,13 @@ def generate_audit_report(program, completed_courses, cgpa, earned_credits, defi
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python level3_audit_engine.py <transcript.csv> <program_knowledge.md>")
+        print("Usage: python level3_audit_engine.py <transcript.csv> <program_knowledge.md> [program]")
+        print("  program: BSCSE, BSEEE, or LLB (auto-detected if not specified)")
         sys.exit(1)
 
     transcript_path = sys.argv[1]
     program_path = sys.argv[2]
+    program = sys.argv[3].upper() if len(sys.argv) > 3 else None
 
     if not Path(transcript_path).exists():
         print(f"Error: Transcript file not found: {transcript_path}")
@@ -328,14 +499,18 @@ def main():
         sys.exit(1)
 
     courses = load_transcript(transcript_path)
-    program = parse_program_knowledge(program_path)
+    program_data = parse_program_knowledge(program_path)
+    
+    if program is None:
+        program = detect_program(courses)
+    
     completed_courses = process_transcript(courses)
     cgpa = calculate_cgpa(completed_courses)
     earned_credits = calculate_earned_credits(completed_courses)
     waivers = get_waivers_from_user()
     
-    deficiencies = audit_program(program, completed_courses, cgpa, earned_credits, waivers)
-    generate_audit_report(program, completed_courses, cgpa, earned_credits, deficiencies, transcript_path)
+    deficiencies = audit_program(program_data, completed_courses, cgpa, earned_credits, waivers)
+    generate_audit_report(program_data, completed_courses, cgpa, earned_credits, deficiencies, transcript_path)
 
 
 if __name__ == '__main__':

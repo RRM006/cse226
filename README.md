@@ -1,10 +1,10 @@
 # NSU Audit Core System
 
-A command-line tool to automate graduation eligibility verification for North South University (NSU) students. This system validates student transcripts against BSCSE and BSEEE program requirements.
+A command-line tool to automate graduation eligibility verification for North South University (NSU) students. This system validates student transcripts against BSCSE, BSEEE, and LL.B Honors program requirements.
 
 ## Project Overview
 
-- **Version**: 1.0
+- **Version**: 2.0
 - **Language**: Python 3
 - **Project Type**: CSE226 Project 1 - Spring 2026
 
@@ -15,44 +15,49 @@ project_root/
 ├── src/
 │   ├── level1_credit_tally.py       # Level 1: Credit Tally Engine
 │   ├── level2_cgpa_calculator.py    # Level 2: CGPA Calculator & Waiver Handler
-│   └── level3_audit_engine.py      # Level 3: Audit Engine & Deficiency Reporter
+│   └── level3_audit_engine.py       # Level 3: Audit Engine & Deficiency Reporter
 ├── data/
 │   ├── program_knowledge_BSCSE.md   # BSCSE program requirements
-│   ├── program_knowledge_BSEEE.md  # BSEEE program requirements
+│   ├── program_knowledge_BSEEE.md   # BSEEE program requirements
+│   ├── program_knowledge_LLB.md     # LL.B Honors program requirements
 │   └── transcript_template.csv      # Transcript CSV template
 ├── tests/
 │   ├── level1/
-│   │   ├── test_L1_1.csv           # Standard successful student
-│   │   ├── test_L1_2.csv           # Mixed grades with failures
-│   │   ├── test_L1_3.csv           # Incomplete and withdrawn
-│   │   ├── test_L1_4.csv           # Zero-credit labs
-│   │   ├── test_edge_all_A.csv     # Edge: All A grades
-│   │   ├── test_edge_all_F.csv     # Edge: All F grades
-│   │   └── test_edge_mixed_invalid.csv
+│   │   ├── bscse/
+│   │   │   ├── test_bscse_standard.csv
+│   │   │   ├── test_bscse_mixed_grades.csv
+│   │   │   ├── test_bscse_with_failures.csv
+│   │   │   ├── test_bscse_all_A.csv
+│   │   │   └── test_bscse_invalid_grades.csv
+│   │   ├── bseee/
+│   │   │   ├── test_bseee_standard.csv
+│   │   │   └── test_bseee_with_failures.csv
+│   │   └── law/
+│   │       ├── test_law_standard.csv
+│   │       └── test_law_ged_incomplete.csv
 │   ├── level2/
-│   │   ├── test_L2_1.csv           # Standard CGPA calculation
-│   │   ├── test_L2_2.csv           # Retake scenario
-│   │   ├── test_L2_3.csv           # Course waivers
-│   │   ├── test_L2_4.csv           # Complex retakes + waivers + F
-│   │   ├── test_edge_borderline_cgpa.csv
-│   │   └── test_edge_multiple_retakes.csv
+│   │   ├── bscse/
+│   │   │   ├── test_bscse_standard.csv
+│   │   │   └── test_bscse_retakes.csv
+│   │   ├── bseee/
+│   │   │   └── test_bseee_standard.csv
+│   │   └── law/
+│   │       └── test_law_standard.csv
 │   └── level3/
-│       ├── test_L3_1.csv           # Graduation ready student
-│       ├── test_L3_2.csv           # Missing core courses
-│       ├── test_L3_3.csv           # Probation status
-│       ├── test_L3_4.csv           # Elective trail violation
-│       ├── test_edge_bseee_complete.csv
-│       ├── test_edge_missing_capstone.csv
-│       ├── test_edge_extra_credits.csv
-│       ├── test_edge_missing_open_elective.csv
-│       ├── test_edge_dual_program_cse_ece.csv
-│       ├── test_edge_prerequisite_violation.csv
-│       ├── test_edge_eee_power_trail.csv
-│       ├── test_edge_single_elective_trail.csv
-│       ├── test_edge_ai_arch_trails.csv
-│       └── test_edge_open_elective.csv
+│       ├── bscse/
+│       │   ├── test_bscse_complete.csv
+│       │   ├── test_bscse_missing_electives.csv
+│       │   └── test_bscse_probation.csv
+│       ├── bseee/
+│       │   └── test_bseee_complete.csv
+│       └── law/
+│           ├── test_law_complete.csv
+│           ├── test_law_missing_dissertation.csv
+│           └── test_law_probation.csv
 ├── README.md
-└── testing_plan.md
+├── TESTME.md
+├── testing_plan.md
+└── version2.0.md
 ```
 
 ## Requirements
@@ -72,6 +77,11 @@ Calculates total valid earned credits from transcript.
 
 ```bash
 python src/level1_credit_tally.py tests/level1/test_L1_1.csv
+```
+
+For Law program:
+```bash
+python src/level1_credit_tally.py tests/level1/law/test_L1_law_standard.csv
 ```
 
 ### Level 2: CGPA Calculator
@@ -100,17 +110,23 @@ For BSEEE program:
 python src/level3_audit_engine.py tests/level3/test_edge_bseee_complete.csv data/program_knowledge_BSEEE.md
 ```
 
+For Law program:
+```bash
+python src/level3_audit_engine.py tests/level3/law/test_L3_law_complete.csv data/program_knowledge_LLB.md
+```
+
 ## Program Support Matrix
 
-| Feature | BSCSE | BSEEE |
-|---------|-------|-------|
-| University Core (34 credits) | ✓ | ✓ |
-| SEPS Core (38 credits) | ✓ | ✓ |
-| Major Core | CSE courses | EEE courses |
-| Capstone Projects | CSE299/499A/499B | EEE299/499A/499B |
-| Specialized Electives | 6 trails | 5 trails |
-| Open Elective | ✓ | ✓ |
-| Waivers (ENG102, MAT116) | ✓ | ✓ |
+| Feature | BSCSE | BSEEE | LL.B Honors |
+|---------|-------|-------|--------------|
+| University Core (34 credits) | ✓ | ✓ | - |
+| GED (25 credits) | - | - | ✓ (Group 1 + Group 2) |
+| SEPS Core (38 credits) | ✓ | ✓ | - |
+| Major Core | CSE courses | EEE courses | 27 Law courses |
+| Capstone Projects | CSE299/499A/499B | EEE299/499A/499B | LLB407 Dissertation |
+| Specialized Electives | 6 trails | 5 trails | 19 options (pool) |
+| Open Elective | ✓ | ✓ | - |
+| Waivers (ENG102, MAT116) | ✓ | ✓ | ENG102 |
 
 ### BSCSE Elective Trails
 - Algorithms and Computation
@@ -126,6 +142,13 @@ python src/level3_audit_engine.py tests/level3/test_edge_bseee_complete.csv data
 - Communications Engineering
 - Robotics and Intelligence System
 - Telecommunication System
+
+### LL.B Honors Program
+- **GED Group 1**: 16 credits (5 required courses + 1 science)
+- **GED Group 2**: 9 credits (choose 3 from 11)
+- **Core Program**: 81 credits (27 courses by year)
+- **Electives**: 24 credits (choose 8 from 19)
+- **Capstone**: LLB407 Law Dissertation (required)
 
 ## NSU Grading Scale
 
@@ -176,9 +199,18 @@ python src/level3_audit_engine.py tests/level3/test_edge_bseee_complete.csv data
 
 Run individual test files:
 ```bash
-python src/level1_credit_tally.py tests/level1/test_L1_1.csv
-python src/level2_cgpa_calculator.py tests/level2/test_L2_1.csv
-python src/level3_audit_engine.py tests/level3/test_L3_1.csv data/program_knowledge_BSCSE.md
+# BSCSE Tests
+python src/level1_credit_tally.py tests/level1/bscse/test_bscse_standard.csv
+python src/level2_cgpa_calculator.py tests/level2/bscse/test_bscse_standard.csv
+python src/level3_audit_engine.py tests/level3/bscse/test_bscse_complete.csv data/program_knowledge_BSCSE.md
+
+# BSEEE Tests
+python src/level1_credit_tally.py tests/level1/bseee/test_bseee_standard.csv
+python src/level3_audit_engine.py tests/level3/bseee/test_bseee_complete.csv data/program_knowledge_BSEEE.md
+
+# Law Tests
+python src/level1_credit_tally.py tests/level1/law/test_law_standard.csv
+python src/level3_audit_engine.py tests/level3/law/test_law_complete.csv data/program_knowledge_LLB.md
 ```
 
 See `testing_plan.md` for detailed test strategy and coverage information.

@@ -1,0 +1,46 @@
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Spring2023
+ENG103,Intermediate Composition,3,A,Spring2023
+ENG111,Public Speaking,3,A-,Fall2023
+BAN205,Bangla Language,3,B+,Fall2023
+PHI104,Introduction to Ethics,3,B,Spring2024
+HIS102,Introduction to World Civilization,3,B,Spring2024
+HIS103,Emergence of Bangladesh,3,B-,Fall2024
+ECO101,Introduction to Microeconomics,3,A,Fall2023
+POL101,Introduction to Political Science,3,A-,Spring2024
+SOC101,Introduction to Sociology,3,B+,Summer2024
+BIO103,Biology,4,A,Fall2023
+PHY107,Physics I,4,A,Spring2024
+CHE101,Chemistry I,4,A-,Summer2024
+MAT116,Pre-Calculus,0,B,Spring2023
+MAT120,Calculus I,3,B,Fall2023
+MAT130,Calculus II,3,B+,Spring2024
+MAT250,Calculus III,3,A,Summer2024
+MAT361,Probability and Statistics,3,A-,Fall2024
+MAT125,Linear Algebra,3,B+,Spring2025
+MAT350,Engineering Mathematics,3,A,Fall2024
+EEE452,Engineering Economics,3,B,Spring2025
+CEE110,Engineering Drawing,1,A,Fall2023
+EEE115,Programming for Engineers,3,A,Spring2023
+EEE115L,Programming for Engineers Lab,1,A,Spring2023
+EEE141,Electrical Circuits I,3,A,Fall2023
+EEE141L,Electrical Circuits I Lab,1,A,Fall2023
+EEE111,Analog Electronics I,3,A,Spring2024
+EEE111L,Analog Electronics I Lab,1,A,Spring2024
+EEE211,Digital Electronics,3,B+,Fall2024
+EEE211L,Digital Electronics Lab,0,A,Fall2024
+EEE221,Electromagnetic Theory,3,A-,Spring2024
+EEE231,Electrical Machines I,3,B,Fall2024
+EEE231L,Electrical Machines I Lab,0,A,Fall2024
+EEE241,Signal and Systems,3,A,Spring2025
+EEE251,Electronic Circuits,3,B+,Fall2025
+EEE251L,Electronic Circuits Lab,1,A,Fall2025
+EEE311,Microprocessors and Microcontrollers,3,A-,Spring2025
+EEE321,Power System Analysis,3,A,Fall2025
+EEE331,Control Systems,3,B+,Spring2026
+EEE299,Junior Design Project I,1,A,Fall2024
+EEE499A,Senior Design Project I,1.5,A,Spring2025
+EEE499B,Senior Design Project II,1.5,A,Fall2025
+EEE421,Power Electronics,3,A,Spring2025
+EEE431,High Voltage Engineering,3,B+,Fall2025
+EEE441,Renewable Energy Systems,3,A-,Spring2026
