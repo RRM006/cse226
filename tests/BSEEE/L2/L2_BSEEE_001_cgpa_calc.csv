@@ -1,0 +1,14 @@
+# Student: L2_BSEEE_001
+# Program: BSEEE
+# Test: Basic CGPA calculation for BSEEE
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2021
+ENG103,Intermediate Composition,3,B+,Fall2021
+ENG111,Public Speaking,3,B,Spring2022
+MAT116,Pre-Calculus,0,A,Fall2021
+MAT120,Calculus I,3,A,Fall2021
+MAT130,Calculus II,3,B+,Spring2022
+PHY107,Physics I,4,A,Fall2021
+PHY108,Physics II,4,B,Spring2022
+EEE141,Electrical Circuits I,3,A-,Spring2023
+EEE141L,Electrical Circuits I Lab,1,A,Spring2023

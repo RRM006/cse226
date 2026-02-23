@@ -1,0 +1,12 @@
+# Student: EXT_LLB_002
+# University: Private Law College
+# Program: LLB
+course_code,course_name,credits,grade,semester
+ENG101,English Composition I,3,A,Fall2020
+ENG102,English Composition II,3,C,Spring2021
+LAW101,Introduction to Law,3,F,Fall2020
+LAW102,Constitutional Law,3,D,Spring2021
+LAW201,Contract Law,3,C,Fall2021
+LAW202,Tort Law,3,C+,Spring2022
+PHI101,Philosophy,3,A,Fall2020
+ART101,Art Appreciation,3,A,Spring2021

@@ -1,0 +1,16 @@
+# Student: L1_LLB_003
+# Program: LLB
+# Test: Retake scenario for LLB
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2021
+ENG103,Intermediate Composition,3,B+,Fall2021
+BEN205,Bangla Language,3,C,Spring2022
+BEN205,Bangla Language,3,B,Fall2022
+HIS103,Emergence of Bangladesh,3,F,Fall2021
+HIS103,Emergence of Bangladesh,3,A-,Spring2022
+PBH101,Public Health,4,D+,Spring2022
+PBH101,Public Health,4,B+,Fall2023
+LLB101,Law of Torts,3,A,Fall2022
+LLB102,Constitutional Law,3,B+,Fall2022
+LLB103,Contract Law,3,F,Spring2023
+LLB103,Contract Law,3,A-,Fall2023

@@ -1,0 +1,80 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: L3_BSCSE_006
+Program: BSc in Computer Science and Engineering
+Processing: L3_BSCSE_006_missing_capstone.csv
+Knowledge Base: program_knowledge_BSCSE.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          117 / 130 required
+CGPA:             3.19
+Standing:         First Class (Good Standing)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:   ✓ COMPLETE
+University Core - Humanities:  ✓ COMPLETE
+University Core - Social Sciences: ✓ COMPLETE
+University Core - Sciences:    ✓ COMPLETE
+SEPS Core:                     ✓ COMPLETE
+Major Core:                    ✓ COMPLETE
+Capstone:                      ⚠ INCOMPLETE (1 / 4)
+  Missing:
+    ├─ CSE499A: Senior Design Project I (1.5 cr)
+    └─ CSE499B: Senior Design Project II (1.5 cr)
+Elective Trails:               ⚠ INCOMPLETE (6 / 9)
+  Missing:
+    └─ CSE401: Advanced Programming Techniques (3 cr)
+Open Elective:                 ⚠ INCOMPLETE (0 / 3)
+
+  Trail Requirement: ✓ SATISFIED
+    Best trail: Artificial Intelligence Trail (2 courses)
+
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 4 (9 credits)
+
+Capstone:
+  1. CSE499A: Senior Design Project I (1.5 cr) [CAPSTONE - REQUIRED]
+  2. CSE499B: Senior Design Project II (1.5 cr) [CAPSTONE - REQUIRED]
+
+Elective Trails:
+  1. CSE401: Advanced Programming Techniques (3 cr)
+
+Open Elective:
+  1. OPEN_ELECTIVE: Open Elective Course (3 cr)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+To graduate, you must:
+  1. Complete CSE499A (1.5 credits) [REQUIRED]
+  2. Complete CSE499B (1.5 credits) [REQUIRED]
+  3. Complete CSE401 (3 credits)
+  4. Complete OPEN_ELECTIVE (3 credits)
+
+Total credits needed: 13
+Estimated completion: 1 semester(s)
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ❌ NOT ELIGIBLE FOR GRADUATION
+
+Reasons:
+  ├─ Insufficient credits (117 / 130)
+  ├─ Missing capstone: CSE499A (Senior Design Project I)
+  ├─ Missing capstone: CSE499B (Senior Design Project II)
+  └─ Missing 4 required course(s) (9 credits)
+
+Status: Continue enrollment to complete remaining requirements.

@@ -1,0 +1,12 @@
+# Student: L2_BSEEE_003
+# Program: BSEEE
+# Test: Retake with improved grades for BSEEE
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2021
+MAT120,Calculus I,3,A,Fall2021
+MAT130,Calculus II,3,C,Spring2022
+MAT130,Calculus II,3,B,Fall2022
+EEE141,Electrical Circuits I,3,F,Spring2023
+EEE141,Electrical Circuits I,3,B+,Fall2023
+EEE141L,Electrical Circuits I Lab,1,A,Spring2023
+PHY107,Physics I,4,A,Fall2021

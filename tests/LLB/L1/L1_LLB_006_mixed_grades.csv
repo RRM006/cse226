@@ -1,0 +1,15 @@
+# Student: L1_LLB_006
+# Program: LLB
+# Test: Mixed grades with case insensitivity
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,a,Fall2021
+ENG103,Intermediate Composition,3,b+,Fall2021
+BEN205,Bangla Language,3,B,Spring2022
+HIS103,Emergence of Bangladesh,3,w,Fall2021
+PBH101,Public Health,4,F,Spring2022
+ECO101,Introduction to Microeconomics,3,i,Fall2021
+POL101,Introduction to Political Science,3,x,Spring2022
+ENG111,Public Speaking,3,D+,Fall2022
+PHI101,Introduction to Philosophy,3,d,Fall2022
+LLB101,Law of Torts,3,A,Fall2022
+LLB102,Constitutional Law,3,b+,Fall2022

@@ -1,0 +1,34 @@
+=== NSU AUDIT CORE - LEVEL 1 ===
+Student: L1_BSEEE_006
+Program: BSc in Electrical and Electronic Engineering
+Processing: L1_BSEEE_006_mixed_grades.csv
+
+╔════════════════════════════════════════════════════════════════╗
+║                     CREDIT ANALYSIS                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Total Courses Attempted: 11
+Valid Courses (A-D): 7
+Excluded Courses: 4
+  ├─ HIS102 (W) - 3 credits [WITHDRAWN]
+  ├─ HIS103 (F) - 3 credits [FAILED]
+  ├─ ECO101 (I) - 3 credits [INCOMPLETE]
+  └─ POL101 (X) - 3 credits [MARKED]
+
+╔════════════════════════════════════════════════════════════════╗
+║                   CREDITS BY CATEGORY                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:     9 /  12 credits  ⚠ IN PROGRESS
+University Core - Humanities:    3 /   9 credits  ⚠ IN PROGRESS
+University Core - Social Sciences:   0 /   9 credits  ⚠ IN PROGRESS
+University Core - Sciences:      0 /   4 credits  ⚠ IN PROGRESS
+SEPS Core:                       6 /  38 credits  ⚠ IN PROGRESS
+EEE Major Core:                  0 /  42 credits  ⚠ IN PROGRESS
+Capstone:                        0 /   4 credits  ⚠ IN PROGRESS
+Elective Trails:                 0 /   9 credits  ⚠ IN PROGRESS
+Open Elective:                   0 /   3 credits  ⚠ IN PROGRESS
+
+Total Earned Credits:  18 / 130 credits
+
+RESULT: ⚠ IN PROGRESS (18 credits completed)

@@ -1,0 +1,158 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: TRANSFER_LLB_TO_BSCSE_001
+Program: BSc in Computer Science and Engineering
+Processing: TRANSFER_LLB_TO_BSCSE_001.csv
+Knowledge Base: program_knowledge_LLB.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          57 / 130 required
+CGPA:             3.55
+Standing:         Cum Laude
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:   ✓ COMPLETE
+  Missing:
+    ├─ CHE101: Chemistry I (4 cr)
+    ├─ PHY107: Physics I (4 cr)
+    ├─ BIO103: Biology (4 cr)
+    ├─ ECO104: Principles of Macroeconomics (3 cr)
+    ├─ POL104: Government and Politics in Bangladesh (3 cr)
+    ├─ ENV203: Environmental Science (3 cr)
+    ├─ GEO205: Introduction to Geography (3 cr)
+    ├─ BUS112: Principles of Management (3 cr)
+    ├─ SOC101: Introduction to Sociology (3 cr)
+    ├─ ANT101: Introduction to Anthropology (3 cr)
+    ├─ LLB201: Muslim Family and Property Law (3 cr)
+    ├─ LLB202: Law of Crime (3 cr)
+    ├─ LLB203: Law of Equity, Trust & Specific Relief (3 cr)
+    ├─ LLB204: Company Law (3 cr)
+    ├─ LLB205: Laws regarding Transfer of Property (3 cr)
+    ├─ LLB206: Administrative Law (3 cr)
+    ├─ LLB207: Law of Registration & Limitation (3 cr)
+    ├─ LLB208: Jurisprudence and Legal Theory (3 cr)
+    ├─ LLB209: Legal Professional Ethics (3 cr)
+    ├─ LLB301: Law of Evidence (3 cr)
+    ├─ LLB302: Law of Criminal Procedure (Part 1) (3 cr)
+    ├─ LLB304: Law of Civil Procedure (Part 1) (3 cr)
+    ├─ LLB306: Law of Labour and Employment (3 cr)
+    ├─ LLB303: Law of Criminal Procedure (Part 2) (3 cr)
+    ├─ LLB305: Law of Civil Procedure (Part 2) (3 cr)
+    ├─ LLB307: Land Law of Bangladesh (3 cr)
+    ├─ LLB401: Alternative Dispute Resolution Methods (3 cr)
+    ├─ LLB402: Legal Drafting (Civil and Criminal) & Conveyance (3 cr)
+    ├─ LLB403: Public International Laws (3 cr)
+    ├─ LLB404: Legal Research (3 cr)
+    ├─ LLB405: Trial and Advocacy (3 cr)
+    ├─ LLB406: Hindu and Christian Family Law (3 cr)
+    └─ LLB407: Law Dissertation (3 cr)
+University Core - Humanities:  ⚠ INCOMPLETE (0 / 9)
+University Core - Social Sciences: ✓ COMPLETE
+University Core - Sciences:    ⚠ INCOMPLETE (0 / 4)
+SEPS Core:                     ⚠ INCOMPLETE (0 / 38)
+Major Core:                    ⚠ INCOMPLETE (0 / 42)
+Capstone:                      ⚠ INCOMPLETE (0 / 4)
+Elective Trails:               ⚠ INCOMPLETE (0 / 9)
+Open Elective:                 ✓ COMPLETE
+
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 33 (102 credits)
+
+University Core - Languages:
+  1. CHE101: Chemistry I (4 cr)
+  2. PHY107: Physics I (4 cr)
+  3. BIO103: Biology (4 cr)
+  4. ECO104: Principles of Macroeconomics (3 cr)
+  5. POL104: Government and Politics in Bangladesh (3 cr)
+  6. ENV203: Environmental Science (3 cr)
+  7. GEO205: Introduction to Geography (3 cr)
+  8. BUS112: Principles of Management (3 cr)
+  9. SOC101: Introduction to Sociology (3 cr)
+  10. ANT101: Introduction to Anthropology (3 cr)
+  11. LLB201: Muslim Family and Property Law (3 cr)
+  12. LLB202: Law of Crime (3 cr)
+  13. LLB203: Law of Equity, Trust & Specific Relief (3 cr)
+  14. LLB204: Company Law (3 cr)
+  15. LLB205: Laws regarding Transfer of Property (3 cr)
+  16. LLB206: Administrative Law (3 cr)
+  17. LLB207: Law of Registration & Limitation (3 cr)
+  18. LLB208: Jurisprudence and Legal Theory (3 cr)
+  19. LLB209: Legal Professional Ethics (3 cr)
+  20. LLB301: Law of Evidence (3 cr)
+  21. LLB302: Law of Criminal Procedure (Part 1) (3 cr)
+  22. LLB304: Law of Civil Procedure (Part 1) (3 cr)
+  23. LLB306: Law of Labour and Employment (3 cr)
+  24. LLB303: Law of Criminal Procedure (Part 2) (3 cr)
+  25. LLB305: Law of Civil Procedure (Part 2) (3 cr)
+  26. LLB307: Land Law of Bangladesh (3 cr)
+  27. LLB401: Alternative Dispute Resolution Methods (3 cr)
+  28. LLB402: Legal Drafting (Civil and Criminal) & Conveyance (3 cr)
+  29. LLB403: Public International Laws (3 cr)
+  30. LLB404: Legal Research (3 cr)
+  31. LLB405: Trial and Advocacy (3 cr)
+  32. LLB406: Hindu and Christian Family Law (3 cr)
+  33. LLB407: Law Dissertation (3 cr)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+To graduate, you must:
+  1. Complete CHE101 (4 credits)
+  2. Complete PHY107 (4 credits)
+  3. Complete BIO103 (4 credits)
+  4. Complete ECO104 (3 credits)
+  5. Complete POL104 (3 credits)
+  6. Complete ENV203 (3 credits)
+  7. Complete GEO205 (3 credits)
+  8. Complete BUS112 (3 credits)
+  9. Complete SOC101 (3 credits)
+  10. Complete ANT101 (3 credits)
+  11. Complete LLB201 (3 credits)
+  12. Complete LLB202 (3 credits)
+  13. Complete LLB203 (3 credits)
+  14. Complete LLB204 (3 credits)
+  15. Complete LLB205 (3 credits)
+  16. Complete LLB206 (3 credits)
+  17. Complete LLB207 (3 credits)
+  18. Complete LLB208 (3 credits)
+  19. Complete LLB209 (3 credits)
+  20. Complete LLB301 (3 credits)
+  21. Complete LLB302 (3 credits)
+  22. Complete LLB304 (3 credits)
+  23. Complete LLB306 (3 credits)
+  24. Complete LLB303 (3 credits)
+  25. Complete LLB305 (3 credits)
+  26. Complete LLB307 (3 credits)
+  27. Complete LLB401 (3 credits)
+  28. Complete LLB402 (3 credits)
+  29. Complete LLB403 (3 credits)
+  30. Complete LLB404 (3 credits)
+  31. Complete LLB405 (3 credits)
+  32. Complete LLB406 (3 credits)
+  33. Complete LLB407 (3 credits)
+
+Total credits needed: 102
+Estimated completion: 6 semester(s)
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ❌ NOT ELIGIBLE FOR GRADUATION
+
+Reasons:
+  ├─ Insufficient credits (57 / 130)
+  └─ Missing 33 required course(s) (102 credits)
+
+Status: Continue enrollment to complete remaining requirements.

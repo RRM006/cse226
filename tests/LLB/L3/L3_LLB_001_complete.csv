@@ -1,0 +1,48 @@
+# Student: L3_LLB_001
+# Program: LLB
+# Test: Complete graduation requirements for LLB
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2019
+ENG103,Intermediate Composition,3,A-,Fall2019
+BEN205,Bangla Language,3,A,Spring2020
+HIS103,Emergence of Bangladesh,3,A-,Fall2019
+PBH101,Public Health,4,A,Spring2020
+ECO101,Introduction to Microeconomics,3,B+,Fall2019
+POL101,Introduction to Political Science,3,B+,Spring2020
+ENG111,Public Speaking,3,B,Fall2020
+PHI101,Introduction to Philosophy,3,A,Fall2020
+LLB101,Law of Torts,3,A,Fall2020
+LLB102,Constitutional Law,3,A,Fall2020
+LLB103,Contract Law,3,A-,Spring2021
+LLB104,Property Law,3,A,Spring2021
+LLB201,Criminal Law,3,A,Fall2021
+LLB202,Commercial Law,3,A-,Fall2021
+LLB203,Evidence Law,3,A,Spring2022
+LLB204,Equity and Trust,3,A,Spring2022
+LLB205,Company Law,3,A-,Fall2022
+LLB206,Tax Law,3,A,Fall2022
+LLB207,Labour Law,3,A,Spring2023
+LLB208,International Trade Law,3,A-,Spring2023
+LLB209,Islamic Law,3,A,Fall2023
+LLB301,Public International Law,3,A,Fall2023
+LLB302,Human Rights Law,3,A-,Fall2023
+LLB303,Private International Law,3,A,Spring2024
+LLB304,Environmental Law,3,A,Spring2024
+LLB305,Intellectual Property Law,3,A-,Fall2024
+LLB306,Banking and Insurance Law,3,A,Fall2024
+LLB307,Alternative Dispute Resolution,3,A,Spring2025
+LLB401,Legal Research Methods,3,A,Fall2024
+LLB402,Professional Ethics,3,A,Fall2024
+LLB403,Internship,3,A,Spring2025
+LLB404,Moot Court Practice,3,A,Spring2025
+LLB405,Thesis Writing,3,A,Fall2025
+LLB406,Seminar in Contemporary Legal Issues,3,A,Fall2025
+LLB407,Clinical Legal Education,3,A,Spring2026
+LLB411,Cyber Law,3,A,Spring2024
+LLB412,Media Law,3,A-,Spring2024
+LLB413,Health Law,3,A,Fall2024
+LLB414,Immigration Law,3,A,Fall2024
+LLB415,Comparative Constitutional Law,3,A-,Spring2025
+LLB416,International Humanitarian Law,3,A,Spring2025
+LLB417,Competition Law,3,A,Fall2025
+LLB418,Investment Law,3,A,Fall2025

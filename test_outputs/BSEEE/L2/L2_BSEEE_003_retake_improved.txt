@@ -1,0 +1,32 @@
+=== NSU AUDIT CORE - LEVEL 2 ===
+Student: L2_BSEEE_003
+Program: BSc in Electrical and Electronic Engineering
+Processing: L2_BSEEE_003_retake_improved.csv
+
+Enter waived courses (comma-separated, or NONE): 
+╔════════════════════════════════════════════════════════════════╗
+║                     CGPA CALCULATION                         ║
+╚════════════════════════════════════════════════════════════════╝
+
+Waivers Applied: 0 course (0 credits)
+
+Retakes Processed: 2 courses
+  ├─ MAT130: C (2.0) → B (3.0)  ✓ IMPROVED
+  └─ EEE141: F (0.0) → B+ (3.3)  ✓ IMPROVED
+
+Calculation:
+  Total Grade Points:    62.9
+  Total Credits Counted: 17
+
+  CGPA = 62.9 / 17 = 3.70
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACADEMIC STANDING                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+CGPA:             3.70
+Standing:         Magna Cum Laude
+Honors:           Magna Cum Laude
+Status:           ✓ GOOD STANDING
+
+RESULT: ✓ PASSED (CGPA = 3.70)

@@ -1,0 +1,14 @@
+# Student: EXT_BSCSE_001
+# University: Other University
+# Program: BSCSE
+course_code,course_name,credits,grade,semester
+ENG101,English Composition I,3,A,Fall2020
+ENG102,English Composition II,3,B+,Spring2021
+MAT101,Calculus I,3,A,Fall2020
+MAT102,Calculus II,3,B,Spring2021
+PHY101,Physics I,4,A-,Fall2020
+PHY102,Physics II,4,B+,Spring2021
+CHE101,General Chemistry I,4,C+,Fall2020
+CSE101,Introduction to Programming,3,A,Fall2020
+CSE102,Data Structures,3,B+,Spring2021
+ECO101,Principles of Economics,3,B,Fall2020

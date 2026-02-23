@@ -1,0 +1,33 @@
+=== NSU AUDIT CORE - LEVEL 1 ===
+Student: L1_LLB_006
+Program: LL.B Honors
+Processing: L1_LLB_006_mixed_grades.csv
+
+╔════════════════════════════════════════════════════════════════╗
+║                     CREDIT ANALYSIS                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Total Courses Attempted: 11
+Valid Courses (A-D): 7
+Excluded Courses: 4
+  ├─ HIS103 (W) - 3 credits [WITHDRAWN]
+  ├─ PBH101 (F) - 4 credits [FAILED]
+  ├─ ECO101 (I) - 3 credits [INCOMPLETE]
+  └─ POL101 (X) - 3 credits [MARKED]
+
+╔════════════════════════════════════════════════════════════════╗
+║                   CREDITS BY CATEGORY                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+GED Group 1:                     9 /  16 credits  ⚠ IN PROGRESS
+GED Group 2:                     6 /   9 credits  ⚠ IN PROGRESS
+Core Program:                    6 /  81 credits  ⚠ IN PROGRESS
+  ├─ Year 1:                  6 /   6 credits  ✓
+  ├─ Year 2:                  0 /  33 credits  ⚠ (Missing 33)
+  ├─ Year 3:                  0 /  21 credits  ⚠ (Missing 21)
+  └─ Year 4:                  0 /  21 credits  ⚠ (Missing 21)
+Electives:                       0 /  24 credits  ⚠ IN PROGRESS
+
+Total Earned Credits:  21 / 130 credits
+
+RESULT: ⚠ IN PROGRESS (21 credits completed)

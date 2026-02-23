@@ -1,0 +1,21 @@
+# Student: L2_LLB_005
+# Program: LLB
+# Test: Honors case for LLB
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2021
+ENG103,Intermediate Composition,3,A,Fall2021
+BEN205,Bangla Language,3,A,Spring2022
+HIS103,Emergence of Bangladesh,3,A,Fall2021
+PBH101,Public Health,4,A,Spring2022
+ECO101,Introduction to Microeconomics,3,A,Fall2021
+POL101,Introduction to Political Science,3,A,Spring2022
+ENG111,Public Speaking,3,A,Fall2022
+PHI101,Introduction to Philosophy,3,A,Fall2022
+LLB101,Law of Torts,3,A,Fall2022
+LLB102,Constitutional Law,3,A,Fall2022
+LLB103,Contract Law,3,A,Spring2023
+LLB104,Property Law,3,A,Spring2023
+LLB201,Criminal Law,3,A,Fall2023
+LLB202,Commercial Law,3,A,Fall2023
+LLB203,Evidence Law,3,A,Spring2024
+LLB204,Equity and Trust,3,A,Spring2024

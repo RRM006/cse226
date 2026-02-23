@@ -1,0 +1,75 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: L3_LLB_005
+Program: LL.B Honors
+Processing: L3_LLB_005_missing_electives.csv
+Knowledge Base: program_knowledge_LLB.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          109 / 130 required
+CGPA:             3.87
+Standing:         Summa Cum Laude
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+  ├─ GED Group 1 (16 cr):   ✓ COMPLETE
+  └─ GED Group 2 (9 cr):   ✓ COMPLETE
+
+Core Program (81 cr):   ✓ COMPLETE
+  ├─ Year 1 (6 cr):     ✓ COMPLETE
+  ├─ Year 2 (33 cr):     ✓ COMPLETE
+  ├─ Year 3 (21 cr):     ✓ COMPLETE
+  └─ Year 4 (21 cr):     ✓ COMPLETE
+
+Electives (24 cr):      ⚠ INCOMPLETE (0 / 8 courses)
+
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 8 (24 credits)
+
+Electives:
+  1. LLB411: Clinical Legal Education and Community Legal Services (3 cr)
+  2. LLB412: Fiscal & Taxation Law (3 cr)
+  3. LLB413: Environmental Law (3 cr)
+  4. LLB414: Cyber, Media & Telecommunication Law (3 cr)
+  5. LLB415: Special Penal Laws (3 cr)
+  6. LLB416: The Intellectual Property Law (3 cr)
+  7. LLB417: Banking and Foreign Exchange Law (3 cr)
+  8. LLB418: Criminology and Penology (3 cr)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+To graduate, you must:
+  1. Complete LLB411 (3 credits)
+  2. Complete LLB412 (3 credits)
+  3. Complete LLB413 (3 credits)
+  4. Complete LLB414 (3 credits)
+  5. Complete LLB415 (3 credits)
+  6. Complete LLB416 (3 credits)
+  7. Complete LLB417 (3 credits)
+  8. Complete LLB418 (3 credits)
+
+Total credits needed: 24
+Estimated completion: 2 semester(s)
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ❌ NOT ELIGIBLE FOR GRADUATION
+
+Reasons:
+  ├─ Insufficient credits (109 / 130)
+  └─ Missing 8 required course(s) (24 credits)
+
+Status: Continue enrollment to complete remaining requirements.

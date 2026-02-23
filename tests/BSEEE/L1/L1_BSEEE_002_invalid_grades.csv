@@ -1,0 +1,10 @@
+# Student: L1_BSEEE_002
+# Program: BSEEE
+# Test: Invalid grades for BSEEE
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,F,Fall2021
+ENG103,Intermediate Composition,3,W,Fall2021
+MAT120,Calculus I,3,A,Fall2021
+PHY107,Physics I,4,I,Fall2021
+EEE141,Electrical Circuits I,3,X,Spring2023
+EEE141L,Electrical Circuits I Lab,1,B,Spring2023

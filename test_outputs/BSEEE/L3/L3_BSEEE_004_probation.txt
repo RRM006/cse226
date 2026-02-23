@@ -1,0 +1,226 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: L3_BSEEE_004
+Program: BSc in Electrical and Electronic Engineering
+Processing: L3_BSEEE_004_probation.csv
+Knowledge Base: program_knowledge_BSEEE.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          36 / 130 required
+CGPA:             1.00
+Standing:         PROBATION
+
+  ⚠⚠⚠ WARNING: STUDENT IS ON ACADEMIC PROBATION (CGPA < 2.00) ⚠⚠⚠
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:   ⚠ INCOMPLETE (9 / 12)
+  Missing:
+    └─ BAN205: Bangla Language (3 cr)
+University Core - Humanities:  ✓ COMPLETE
+University Core - Social Sciences: ⚠ INCOMPLETE (6 / 9)
+  Missing:
+    └─ ECO104: Macroeconomics (3 cr)
+University Core - Sciences:    ✓ COMPLETE
+SEPS Core:                     ⚠ INCOMPLETE (7 / 38)
+  Missing:
+    ├─ MAT120: Calculus I (3 cr)
+    ├─ MAT250: Calculus III (3 cr)
+    ├─ MAT125: Linear Algebra (3 cr)
+    ├─ MAT350: Engineering Mathematics (3 cr)
+    ├─ MAT361: Probability & Statistics (3 cr)
+    ├─ PHY108: Physics II with Lab (4 cr)
+    ├─ CHE101: Chemistry I with Lab (4 cr)
+    ├─ EEE452: Engineering Economics (3 cr)
+    ├─ CEE110: Engineering Drawing (1 cr)
+    ├─ CSE115: Programming Language I (3 cr)
+    └─ CSE115L: Programming Language I Lab (1 cr)
+EEE Major Core:                ⚠ INCOMPLETE (5 / 42)
+  Missing:
+    ├─ EEE141: Electrical Circuits I (3 cr)
+    ├─ EEE211: Digital Logic Design (3 cr)
+    ├─ EEE211L: Digital Logic Design Lab (0 cr)
+    ├─ EEE241: Electrical Circuits II (3 cr)
+    ├─ EEE241L: Electrical Circuits II Lab (1 cr)
+    ├─ EEE221: Signals and Systems (3 cr)
+    ├─ EEE311: Analog Electronics II (3 cr)
+    ├─ EEE311L: Analog Electronics II Lab (1 cr)
+    ├─ EEE361: Electromagnetic Fields and Waves (3 cr)
+    ├─ EEE312: Power Electronics (3 cr)
+    ├─ EEE312L: Power Electronics Lab (0 cr)
+    ├─ EEE321: Communication Systems (3 cr)
+    ├─ EEE321L: Communication Systems Lab (0 cr)
+    ├─ EEE342: Control Engineering (3 cr)
+    ├─ EEE342L: Control Engineering Lab (1 cr)
+    ├─ EEE362: Power Systems (3 cr)
+    ├─ EEE362L: Power Systems Lab (0 cr)
+    ├─ EEE363: Electrical Machines (3 cr)
+    └─ EEE363L: Electrical Machines Lab (1 cr)
+Capstone:                      ⚠ INCOMPLETE (0 / 4)
+  Missing:
+    ├─ EEE299: Junior Design Project I (1 cr)
+    ├─ EEE499A: Senior Design Project I (1.5 cr)
+    └─ EEE499B: Senior Design Project II (1.5 cr)
+Elective Trails:               ⚠ INCOMPLETE (0 / 9)
+  Missing:
+    ├─ EEE410: EEE410 (3 cr)
+    ├─ EEE411: EEE411 (3 cr)
+    └─ EEE413: EEE413 (3 cr)
+Open Elective:                 ⚠ INCOMPLETE (0 / 3)
+
+  Trail Requirement: ⚠ NOT SATISFIED
+
+
+⚠ Prerequisite Violations: 2
+  ├─ MAT130 (Calculus II) taken in Spring2022
+      Prerequisite: MAT120 (Calculus I) — ❌ Missing
+  └─ EEE111 (Analog Electronics I) taken in Fall2023
+      Prerequisite: EEE141 (Electrical Circuits I) — ❌ Missing
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 39 (90 credits)
+
+University Core - Languages:
+  1. BAN205: Bangla Language (3 cr)
+
+University Core - Social Sciences:
+  1. ECO104: Macroeconomics (3 cr)
+
+SEPS Core:
+  1. MAT120: Calculus I (3 cr)
+       └─ Prerequisite: MAT116 (✓ Complete)
+  2. MAT250: Calculus III (3 cr)
+       └─ Prerequisite: MAT130 (✓ Complete)
+  3. MAT125: Linear Algebra (3 cr)
+       └─ Prerequisite: MAT116 (✓ Complete)
+  4. MAT350: Engineering Mathematics (3 cr)
+       └─ Prerequisite: MAT250 (❌ Missing)
+  5. MAT361: Probability & Statistics (3 cr)
+       └─ Prerequisite: MAT120 (❌ Missing)
+  6. PHY108: Physics II with Lab (4 cr)
+  7. CHE101: Chemistry I with Lab (4 cr)
+  8. EEE452: Engineering Economics (3 cr)
+  9. CEE110: Engineering Drawing (1 cr)
+  10. CSE115: Programming Language I (3 cr)
+  11. CSE115L: Programming Language I Lab (1 cr)
+
+EEE Major Core:
+  1. EEE141: Electrical Circuits I (3 cr)
+       └─ Prerequisite: PHY107 (✓ Complete)
+  2. EEE211: Digital Logic Design (3 cr)
+  3. EEE211L: Digital Logic Design Lab (0 cr)
+  4. EEE241: Electrical Circuits II (3 cr)
+       └─ Prerequisite: EEE141 (❌ Missing)
+  5. EEE241L: Electrical Circuits II Lab (1 cr)
+  6. EEE221: Signals and Systems (3 cr)
+       └─ Prerequisite: MAT250 (❌ Missing)
+  7. EEE311: Analog Electronics II (3 cr)
+       └─ Prerequisite: EEE111 (✓ Complete)
+  8. EEE311L: Analog Electronics II Lab (1 cr)
+  9. EEE361: Electromagnetic Fields and Waves (3 cr)
+       └─ Prerequisite: MAT250 (❌ Missing)
+  10. EEE312: Power Electronics (3 cr)
+       └─ Prerequisite: EEE241 (❌ Missing)
+  11. EEE312L: Power Electronics Lab (0 cr)
+  12. EEE321: Communication Systems (3 cr)
+       └─ Prerequisite: EEE221 (❌ Missing)
+  13. EEE321L: Communication Systems Lab (0 cr)
+  14. EEE342: Control Engineering (3 cr)
+       └─ Prerequisite: EEE221 (❌ Missing)
+  15. EEE342L: Control Engineering Lab (1 cr)
+  16. EEE362: Power Systems (3 cr)
+       └─ Prerequisite: EEE241 (❌ Missing)
+  17. EEE362L: Power Systems Lab (0 cr)
+  18. EEE363: Electrical Machines (3 cr)
+       └─ Prerequisite: EEE241 (❌ Missing)
+  19. EEE363L: Electrical Machines Lab (1 cr)
+
+Capstone:
+  1. EEE299: Junior Design Project I (1 cr) [CAPSTONE - REQUIRED]
+       └─ Prerequisite: Completion of 90 credits (❌ Missing)
+  2. EEE499A: Senior Design Project I (1.5 cr) [CAPSTONE - REQUIRED]
+       └─ Prerequisite: EEE299 (❌ Missing)
+  3. EEE499B: Senior Design Project II (1.5 cr) [CAPSTONE - REQUIRED]
+       └─ Prerequisite: EEE499A (❌ Missing)
+
+Elective Trails:
+  1. EEE410: EEE410 (3 cr)
+  2. EEE411: EEE411 (3 cr)
+  3. EEE413: EEE413 (3 cr)
+
+Open Elective:
+  1. OPEN_ELECTIVE: Open Elective Course (3 cr)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+To graduate, you must:
+  1. Complete BAN205 (3 credits)
+  2. Complete ECO104 (3 credits)
+  3. Complete MAT120 (3 credits)
+  4. Complete MAT250 (3 credits)
+  5. Complete MAT125 (3 credits)
+  6. Complete MAT350 (3 credits)
+  7. Complete MAT361 (3 credits)
+  8. Complete PHY108 (4 credits)
+  9. Complete CHE101 (4 credits)
+  10. Complete EEE452 (3 credits)
+  11. Complete CEE110 (1 credits)
+  12. Complete CSE115 (3 credits)
+  13. Complete CSE115L (1 credits)
+  14. Complete EEE141 (3 credits)
+  15. Complete EEE211 (3 credits)
+  16. Complete EEE211L (0 credits)
+  17. Complete EEE241 (3 credits)
+  18. Complete EEE241L (1 credits)
+  19. Complete EEE221 (3 credits)
+  20. Complete EEE311 (3 credits)
+  21. Complete EEE311L (1 credits)
+  22. Complete EEE361 (3 credits)
+  23. Complete EEE312 (3 credits)
+  24. Complete EEE312L (0 credits)
+  25. Complete EEE321 (3 credits)
+  26. Complete EEE321L (0 credits)
+  27. Complete EEE342 (3 credits)
+  28. Complete EEE342L (1 credits)
+  29. Complete EEE362 (3 credits)
+  30. Complete EEE362L (0 credits)
+  31. Complete EEE363 (3 credits)
+  32. Complete EEE363L (1 credits)
+  33. Complete EEE299 (1 credits) [REQUIRED]
+  34. Complete EEE499A (1.5 credits) [REQUIRED]
+  35. Complete EEE499B (1.5 credits) [REQUIRED]
+  36. Complete EEE410 (3 credits)
+  37. Complete EEE411 (3 credits)
+  38. Complete EEE413 (3 credits)
+  39. Complete OPEN_ELECTIVE (3 credits)
+
+Total credits needed: 94
+Estimated completion: 7 semester(s)
+
+  ⚠ CRITICAL: Raise CGPA above 2.00 to be eligible for graduation
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ❌ NOT ELIGIBLE FOR GRADUATION
+
+Reasons:
+  ├─ Insufficient credits (36 / 130)
+  ├─ CGPA below minimum (1.00 < 2.00) — PROBATION
+  ├─ Missing capstone: EEE299 (Junior Design Project I)
+  ├─ Missing capstone: EEE499A (Senior Design Project I)
+  ├─ Missing capstone: EEE499B (Senior Design Project II)
+  └─ Missing 39 required course(s) (90 credits)
+
+Status: Continue enrollment to complete remaining requirements.

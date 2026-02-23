@@ -1,0 +1,54 @@
+======================================================================
+NSU AUDIT CORE - EXTERNAL TRANSFER EVALUATION
+======================================================================
+
+Student:        EXT_LLB_001
+External Univ:  External Law College
+Target Program: LL.B Honors
+
+======================================================================
+TRANSFER POLICY COMPLIANCE
+======================================================================
+Minimum Grade:    C (2.0 points)
+Max Transfer:     65 credits (50% of program)
+Total External:   21.0 credits
+
+======================================================================
+TRANSFERRED COURSES
+======================================================================
+  ├─ ENG101 → ENG102: English Composition I
+      Grade: A | Credits: 3.0 | From: External Law College
+  ├─ ENG102 → ENG102: English Composition II
+      Grade: B+ | Credits: 3.0 | From: External Law College
+  ├─ LAW101 → LLB101: Introduction to Law
+      Grade: A | Credits: 3.0 | From: External Law College
+  ├─ LAW102 → LLB102: Constitutional Law
+      Grade: B+ | Credits: 3.0 | From: External Law College
+  ├─ ECO101 → ECO101: Principles of Economics
+      Grade: B | Credits: 3.0 | From: External Law College
+  ├─ POL101 → POL101: Introduction to Political Science
+      Grade: B+ | Credits: 3.0 | From: External Law College
+  └─ HIS101 → HIS103: World History
+      Grade: A | Credits: 3.0 | From: External Law College
+
+======================================================================
+REJECTED/NON-TRANSFERABLE COURSES
+======================================================================
+  No rejected courses.
+
+======================================================================
+TRANSFER SUMMARY
+======================================================================
+Courses Evaluated:    7
+Courses Transferred:  7
+Courses Rejected:     0
+Credits Transferred:  21.0
+Credits Rejected:     0.0
+
+======================================================================
+REQUIREMENTS TO COMPLETE AT NSU
+======================================================================
+NSU Credits Required: 109
+Minimum NSU Credits:  65 (50% of program)
+Status: ✓ MEETS NSU RESIDENCY REQUIREMENT
+

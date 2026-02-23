@@ -1,0 +1,25 @@
+# Student: TRANSFER_LLB_TO_BSCSE_001
+# Program: BSCSE
+# Test: Transfer from LLB to BSCSE
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2019
+ENG103,Intermediate Composition,3,B+,Fall2019
+BEN205,Bangla Language,3,A,Spring2020
+HIS103,Emergence of Bangladesh,3,A-,Fall2019
+PBH101,Public Health,4,A,Spring2020
+ECO101,Introduction to Microeconomics,3,B,Fall2019
+POL101,Introduction to Political Science,3,B+,Spring2020
+ENG111,Public Speaking,3,B,Fall2020
+PHI101,Introduction to Philosophy,3,A,Fall2020
+LLB101,Law of Torts,3,A,Fall2020
+LLB102,Constitutional Law,3,B+,Fall2020
+LLB103,Contract Law,3,A-,Spring2021
+LLB104,Property Law,3,B,Spring2021
+MAT116,Pre-Calculus,0,A,Fall2021
+MAT120,Calculus I,3,B+,Fall2021
+MAT130,Calculus II,3,B,Spring2022
+CSE115,Programming Language I,3,A,Fall2021
+CSE115L,Programming Language I Lab,1,A,Fall2021
+CSE173,Discrete Mathematics,3,B+,Spring2022
+CSE215,Programming Language II,3,A-,Spring2022
+CSE215L,Programming Language II Lab,1,A-,Spring2022

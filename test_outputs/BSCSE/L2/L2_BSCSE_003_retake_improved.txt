@@ -1,0 +1,33 @@
+=== NSU AUDIT CORE - LEVEL 2 ===
+Student: L2_BSCSE_003
+Program: BSc in Computer Science and Engineering
+Processing: L2_BSCSE_003_retake_improved.csv
+
+Enter waived courses (comma-separated, or NONE): 
+╔════════════════════════════════════════════════════════════════╗
+║                     CGPA CALCULATION                         ║
+╚════════════════════════════════════════════════════════════════╝
+
+Waivers Applied: 0 course (0 credits)
+
+Retakes Processed: 3 courses
+  ├─ MAT130: C (2.0) → B (3.0)  ✓ IMPROVED
+  ├─ CSE173: F (0.0) → B+ (3.3)  ✓ IMPROVED
+  └─ CSE225: D (1.0) → A (4.0)  ✓ IMPROVED
+
+Calculation:
+  Total Grade Points:    70.9
+  Total Credits Counted: 19
+
+  CGPA = 70.9 / 19 = 3.73
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACADEMIC STANDING                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+CGPA:             3.73
+Standing:         Magna Cum Laude
+Honors:           Magna Cum Laude
+Status:           ✓ GOOD STANDING
+
+RESULT: ✓ PASSED (CGPA = 3.73)

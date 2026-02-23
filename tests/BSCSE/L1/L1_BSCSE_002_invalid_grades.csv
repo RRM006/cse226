@@ -1,0 +1,11 @@
+# Student: L1_BSCSE_002
+# Program: BSCSE
+# Test: Invalid grades (F, W, I, X) - should be excluded
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,F,Fall2021
+ENG103,Intermediate Composition,3,W,Fall2021
+ENG111,Public Speaking,3,I,Spring2022
+PHI104,Introduction to Ethics,3,X,Fall2021
+MAT120,Calculus I,3,D,Fall2021
+CSE115,Programming Language I,3,A,Fall2021
+CSE173,Discrete Mathematics,3,F,Spring2022

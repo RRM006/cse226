@@ -1,0 +1,30 @@
+=== NSU AUDIT CORE - LEVEL 2 ===
+Student: L2_LLB_001
+Program: LL.B Honors
+Processing: L2_LLB_001_cgpa_calc.csv
+
+Enter waived courses (comma-separated, or NONE): 
+╔════════════════════════════════════════════════════════════════╗
+║                     CGPA CALCULATION                         ║
+╚════════════════════════════════════════════════════════════════╝
+
+Waivers Applied: 0 course (0 credits)
+
+Retakes Processed: 0 courses
+
+Calculation:
+  Total Grade Points:    106.1
+  Total Credits Counted: 34
+
+  CGPA = 106.1 / 34 = 3.12
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACADEMIC STANDING                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+CGPA:             3.12
+Standing:         First Class (Good Standing)
+Honors:           None
+Status:           ✓ GOOD STANDING
+
+RESULT: ✓ PASSED (CGPA = 3.12)

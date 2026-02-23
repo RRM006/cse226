@@ -1,0 +1,57 @@
+# Student: L3_BSEEE_001
+# Program: BSEEE
+# Test: Complete graduation requirements for BSEEE
+course_code,course_name,credits,grade,semester
+ENG102,Introduction to Composition,3,A,Fall2021
+ENG103,Intermediate Composition,3,B+,Fall2021
+ENG111,Public Speaking,3,B,Spring2022
+BAN205,Bangla Language,3,A,Spring2022
+PHI104,Introduction to Ethics,3,B+,Fall2021
+HIS102,Introduction to World Civilization,3,B,Spring2022
+HIS103,Emergence of Bangladesh,3,A-,Spring2022
+ECO101,Introduction to Microeconomics,3,B,Fall2021
+POL101,Introduction to Political Science,3,C+,Spring2022
+SOC101,Introduction to Sociology,3,B-,Fall2022
+PHY107,Physics I,4,B+,Fall2021
+PHY108,Physics II,4,B,Spring2022
+CHE101,Chemistry I,4,C+,Fall2022
+MAT116,Pre-Calculus,0,A,Fall2021
+MAT120,Calculus I,3,B+,Fall2021
+MAT130,Calculus II,3,B,Spring2022
+MAT250,Calculus III,3,B-,Fall2022
+MAT125,Linear Algebra,3,B,Spring2022
+MAT350,Engineering Mathematics,3,C,Fall2023
+EEE452,Engineering Economics,3,B-,Spring2023
+CEE110,Engineering Drawing,1,A,Fall2021
+EEE141,Electrical Circuits I,3,B,Spring2023
+EEE141L,Electrical Circuits I Lab,1,B,Spring2023
+EEE111,Analog Electronics I,3,C+,Fall2023
+EEE111L,Analog Electronics I Lab,1,B-,Fall2023
+EEE211,Digital Electronics,3,B+,Spring2024
+EEE211L,Digital Electronics Lab,1,B+,Spring2024
+EEE221,Signals and Systems,3,A-,Fall2024
+EEE241,Electronics II,3,B,Fall2024
+EEE241L,Electronics II Lab,1,B,Fall2024
+EEE311,Electromagnetic Theory,3,A,Spring2025
+EEE312,Communication Systems,3,B+,Spring2025
+EEE312L,Communication Systems Lab,1,B+,Spring2025
+EEE321,Microprocessors and Microcontrollers,3,A-,Fall2025
+EEE321L,Microprocessors Lab,1,A-,Fall2025
+EEE342,Power Systems,3,B,Spring2026
+EEE342L,Power Systems Lab,1,B,Spring2026
+EEE362,Control Systems,3,A,Fall2026
+EEE362L,Control Systems Lab,1,A,Fall2026
+EEE299,Junior Design Project I,1,A,Spring2023
+EEE499A,Senior Design Project I,1.5,A,Fall2024
+EEE499B,Senior Design Project II,1.5,A-,Spring2025
+EEE410,Power Electronics,3,A,Fall2024
+EEE411,Solid State Electronics,3,A-,Spring2025
+EEE413,Semiconductor Devices,3,B+,Fall2025
+MAT361,Probability and Statistics,3,B,Spring2023
+CSE115,Programming Language I,3,A,Fall2021
+CSE115L,Programming Language I Lab,1,A,Fall2021
+EEE311L,Analog Electronics II Lab,1,B+,Spring2025
+EEE361,Electromagnetic Fields and Waves,3,B,Fall2025
+EEE363,Electrical Machines,3,B,Spring2026
+EEE363L,Electrical Machines Lab,1,B,Spring2026
+BUS112,Principles of Management,3,B+,Fall2026

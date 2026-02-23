@@ -1,0 +1,152 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: TRANSFER_EEE_TO_LLB_001
+Program: LL.B Honors
+Processing: TRANSFER_EEE_TO_LLB_001.csv
+Knowledge Base: program_knowledge_LLB.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          63 / 130 required
+CGPA:             3.28
+Standing:         First Class (Good Standing)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+  ├─ GED Group 1 (16 cr):   ⚠ INCOMPLETE (13 / 16)
+  └─ GED Group 2 (9 cr):   ✓ COMPLETE
+
+Core Program (81 cr):   ⚠ INCOMPLETE (18 / 81)
+  ├─ Year 1 (6 cr):     ✓ COMPLETE
+  ├─ Year 2 (33 cr):     ⚠ INCOMPLETE (12 / 33)
+      Missing:
+        ├─ LLB203: Law of Equity, Trust & Specific Relief (3 cr)
+        ├─ LLB204: Company Law (3 cr)
+        ├─ LLB205: Laws regarding Transfer of Property (3 cr)
+        ├─ LLB206: Administrative Law (3 cr)
+        ├─ LLB207: Law of Registration & Limitation (3 cr)
+        ├─ LLB208: Jurisprudence and Legal Theory (3 cr)
+        └─ LLB209: Legal Professional Ethics (3 cr)
+  ├─ Year 3 (21 cr):     ⚠ INCOMPLETE (0 / 21)
+      Missing:
+        ├─ LLB301: Law of Evidence (3 cr)
+        ├─ LLB302: Law of Criminal Procedure (Part 1) (3 cr)
+        ├─ LLB304: Law of Civil Procedure (Part 1) (3 cr)
+        ├─ LLB306: Law of Labour and Employment (3 cr)
+        ├─ LLB303: Law of Criminal Procedure (Part 2) (3 cr)
+        ├─ LLB305: Law of Civil Procedure (Part 2) (3 cr)
+        └─ LLB307: Land Law of Bangladesh (3 cr)
+  └─ Year 4 (21 cr):     ⚠ INCOMPLETE (0 / 21)
+      Missing:
+        ├─ LLB401: Alternative Dispute Resolution Methods (3 cr)
+        ├─ LLB402: Legal Drafting (Civil and Criminal) & Conveyance (3 cr)
+        ├─ LLB403: Public International Laws (3 cr)
+        ├─ LLB404: Legal Research (3 cr)
+        ├─ LLB405: Trial and Advocacy (3 cr)
+        ├─ LLB406: Hindu and Christian Family Law (3 cr)
+        └─ LLB407: Law Dissertation (3 cr)
+
+Electives (24 cr):      ⚠ INCOMPLETE (0 / 8 courses)
+
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 30 (90 credits)
+
+GED Group 1:
+  1. BEN205: Bangla Language (3 cr)
+
+Core Year 2:
+  1. LLB203: Law of Equity, Trust & Specific Relief (3 cr)
+  2. LLB204: Company Law (3 cr)
+  3. LLB205: Laws regarding Transfer of Property (3 cr)
+  4. LLB206: Administrative Law (3 cr)
+  5. LLB207: Law of Registration & Limitation (3 cr)
+  6. LLB208: Jurisprudence and Legal Theory (3 cr)
+  7. LLB209: Legal Professional Ethics (3 cr)
+
+Core Year 3:
+  1. LLB301: Law of Evidence (3 cr)
+  2. LLB302: Law of Criminal Procedure (Part 1) (3 cr)
+  3. LLB304: Law of Civil Procedure (Part 1) (3 cr)
+  4. LLB306: Law of Labour and Employment (3 cr)
+  5. LLB303: Law of Criminal Procedure (Part 2) (3 cr)
+  6. LLB305: Law of Civil Procedure (Part 2) (3 cr)
+  7. LLB307: Land Law of Bangladesh (3 cr)
+
+Core Year 4:
+  1. LLB401: Alternative Dispute Resolution Methods (3 cr)
+  2. LLB402: Legal Drafting (Civil and Criminal) & Conveyance (3 cr)
+  3. LLB403: Public International Laws (3 cr)
+  4. LLB404: Legal Research (3 cr)
+  5. LLB405: Trial and Advocacy (3 cr)
+  6. LLB406: Hindu and Christian Family Law (3 cr)
+  7. LLB407: Law Dissertation (3 cr) [CAPSTONE - REQUIRED]
+
+Electives:
+  1. LLB411: Clinical Legal Education and Community Legal Services (3 cr)
+  2. LLB412: Fiscal & Taxation Law (3 cr)
+  3. LLB413: Environmental Law (3 cr)
+  4. LLB414: Cyber, Media & Telecommunication Law (3 cr)
+  5. LLB415: Special Penal Laws (3 cr)
+  6. LLB416: The Intellectual Property Law (3 cr)
+  7. LLB417: Banking and Foreign Exchange Law (3 cr)
+  8. LLB418: Criminology and Penology (3 cr)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+To graduate, you must:
+  1. Complete BEN205 (3 credits)
+  2. Complete LLB203 (3 credits)
+  3. Complete LLB204 (3 credits)
+  4. Complete LLB205 (3 credits)
+  5. Complete LLB206 (3 credits)
+  6. Complete LLB207 (3 credits)
+  7. Complete LLB208 (3 credits)
+  8. Complete LLB209 (3 credits)
+  9. Complete LLB301 (3 credits)
+  10. Complete LLB302 (3 credits)
+  11. Complete LLB304 (3 credits)
+  12. Complete LLB306 (3 credits)
+  13. Complete LLB303 (3 credits)
+  14. Complete LLB305 (3 credits)
+  15. Complete LLB307 (3 credits)
+  16. Complete LLB401 (3 credits)
+  17. Complete LLB402 (3 credits)
+  18. Complete LLB403 (3 credits)
+  19. Complete LLB404 (3 credits)
+  20. Complete LLB405 (3 credits)
+  21. Complete LLB406 (3 credits)
+  22. Complete LLB407 (3 credits) [REQUIRED]
+  23. Complete LLB411 (3 credits)
+  24. Complete LLB412 (3 credits)
+  25. Complete LLB413 (3 credits)
+  26. Complete LLB414 (3 credits)
+  27. Complete LLB415 (3 credits)
+  28. Complete LLB416 (3 credits)
+  29. Complete LLB417 (3 credits)
+  30. Complete LLB418 (3 credits)
+
+Total credits needed: 90
+Estimated completion: 5 semester(s)
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ❌ NOT ELIGIBLE FOR GRADUATION
+
+Reasons:
+  ├─ Insufficient credits (63 / 130)
+  ├─ Missing capstone: LLB407 (Law Dissertation)
+  └─ Missing 30 required course(s) (90 credits)
+
+Status: Continue enrollment to complete remaining requirements.

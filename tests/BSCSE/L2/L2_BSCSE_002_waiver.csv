@@ -1,0 +1,13 @@
+# Student: L2_BSCSE_002
+# Program: BSCSE
+# Test: Waiver handling (ENG102, MAT116)
+course_code,course_name,credits,grade,semester
+ENG103,Intermediate Composition,3,B+,Fall2021
+ENG111,Public Speaking,3,B,Spring2022
+MAT120,Calculus I,3,A,Fall2021
+MAT130,Calculus II,3,B+,Spring2022
+CSE115,Programming Language I,3,A,Fall2021
+CSE115L,Programming Language I Lab,1,A,Fall2021
+CSE173,Discrete Mathematics,3,B+,Spring2022
+CSE225,Data Structures,3,A-,Fall2022
+CSE225L,Data Structures Lab,0,A,Fall2022

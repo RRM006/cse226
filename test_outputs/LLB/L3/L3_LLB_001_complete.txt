@@ -1,0 +1,50 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: L3_LLB_001
+Program: LL.B Honors
+Processing: L3_LLB_001_complete.csv
+Knowledge Base: program_knowledge_LLB.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          133 / 130 required
+CGPA:             3.88
+Standing:         Summa Cum Laude
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+  ├─ GED Group 1 (16 cr):   ✓ COMPLETE
+  └─ GED Group 2 (9 cr):   ✓ COMPLETE
+
+Core Program (81 cr):   ✓ COMPLETE
+  ├─ Year 1 (6 cr):     ✓ COMPLETE
+  ├─ Year 2 (33 cr):     ✓ COMPLETE
+  ├─ Year 3 (21 cr):     ✓ COMPLETE
+  └─ Year 4 (21 cr):     ✓ COMPLETE
+
+Electives (24 cr):      ✓ COMPLETE (8 courses)
+
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 0 (0 credits)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+No action items — all requirements met!
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ✅ ELIGIBLE FOR GRADUATION
+
+Status: Congratulations! All graduation requirements have been met.

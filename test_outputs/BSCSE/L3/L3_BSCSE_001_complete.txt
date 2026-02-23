@@ -1,0 +1,52 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: L3_BSCSE_001
+Program: BSc in Computer Science and Engineering
+Processing: L3_BSCSE_001_complete.csv
+Knowledge Base: program_knowledge_BSCSE.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          130 / 130 required
+CGPA:             3.21
+Standing:         First Class (Good Standing)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:   ✓ COMPLETE
+University Core - Humanities:  ✓ COMPLETE
+University Core - Social Sciences: ✓ COMPLETE
+University Core - Sciences:    ✓ COMPLETE
+SEPS Core:                     ✓ COMPLETE
+Major Core:                    ✓ COMPLETE
+Capstone:                      ✓ COMPLETE
+Elective Trails:               ✓ COMPLETE
+Open Elective:                 ✓ COMPLETE
+
+  Trail Requirement: ✓ SATISFIED
+    Best trail: Artificial Intelligence Trail (2 courses)
+
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 0 (0 credits)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+No action items — all requirements met!
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ✅ ELIGIBLE FOR GRADUATION
+
+Status: Congratulations! All graduation requirements have been met.

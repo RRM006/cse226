@@ -1,0 +1,30 @@
+=== NSU AUDIT CORE - LEVEL 1 ===
+Student: L1_BSCSE_004
+Program: BSc in Computer Science and Engineering
+Processing: L1_BSCSE_004_all_grades.csv
+
+╔════════════════════════════════════════════════════════════════╗
+║                     CREDIT ANALYSIS                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Total Courses Attempted: 12
+Valid Courses (A-D): 12
+Excluded Courses: 0
+
+╔════════════════════════════════════════════════════════════════╗
+║                   CREDITS BY CATEGORY                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:    12 /  12 credits  ✓ COMPLETE
+University Core - Humanities:    9 /   9 credits  ✓ COMPLETE
+University Core - Social Sciences:   9 /   9 credits  ✓ COMPLETE
+University Core - Sciences:      0 /   4 credits  ⚠ IN PROGRESS
+SEPS Core:                       3 /  38 credits  ⚠ IN PROGRESS
+Major Core:                      0 /  42 credits  ⚠ IN PROGRESS
+Capstone:                        0 /   4 credits  ⚠ IN PROGRESS
+Elective Trails:                 0 /   9 credits  ⚠ IN PROGRESS
+Open Elective:                   0 /   3 credits  ⚠ IN PROGRESS
+
+Total Earned Credits:  33 / 130 credits
+
+RESULT: ⚠ IN PROGRESS (33 credits completed)

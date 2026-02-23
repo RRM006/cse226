@@ -1,0 +1,30 @@
+=== NSU AUDIT CORE - LEVEL 2 ===
+Student: L2_BSCSE_001
+Program: BSc in Computer Science and Engineering
+Processing: L2_BSCSE_001_cgpa_calc.csv
+
+Enter waived courses (comma-separated, or NONE): 
+╔════════════════════════════════════════════════════════════════╗
+║                     CGPA CALCULATION                         ║
+╚════════════════════════════════════════════════════════════════╝
+
+Waivers Applied: 0 course (0 credits)
+
+Retakes Processed: 0 courses
+
+Calculation:
+  Total Grade Points:    101.8
+  Total Credits Counted: 29
+
+  CGPA = 101.8 / 29 = 3.51
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACADEMIC STANDING                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+CGPA:             3.51
+Standing:         Cum Laude
+Honors:           Cum Laude
+Status:           ✓ GOOD STANDING
+
+RESULT: ✓ PASSED (CGPA = 3.51)

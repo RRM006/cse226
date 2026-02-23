@@ -1,0 +1,29 @@
+=== NSU AUDIT CORE - LEVEL 1 ===
+Student: L1_LLB_005
+Program: LL.B Honors
+Processing: L1_LLB_005_core_courses.csv
+
+╔════════════════════════════════════════════════════════════════╗
+║                     CREDIT ANALYSIS                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Total Courses Attempted: 15
+Valid Courses (A-D): 15
+Excluded Courses: 0
+
+╔════════════════════════════════════════════════════════════════╗
+║                   CREDITS BY CATEGORY                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+GED Group 1:                    16 /  16 credits  ✓ COMPLETE
+GED Group 2:                     6 /   9 credits  ⚠ IN PROGRESS
+Core Program:                   24 /  81 credits  ⚠ IN PROGRESS
+  ├─ Year 1:                  6 /   6 credits  ✓
+  ├─ Year 2:                 18 /  33 credits  ⚠ (Missing 15)
+  ├─ Year 3:                  0 /  21 credits  ⚠ (Missing 21)
+  └─ Year 4:                  0 /  21 credits  ⚠ (Missing 21)
+Electives:                       0 /  24 credits  ⚠ IN PROGRESS
+
+Total Earned Credits:  46 / 130 credits
+
+RESULT: ⚠ IN PROGRESS (46 credits completed)

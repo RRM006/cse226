@@ -1,0 +1,193 @@
+Enter waived courses (comma-separated, or NONE): 
+=== NSU AUDIT CORE - LEVEL 3 ===
+Student: L3_BSCSE_005
+Program: BSc in Computer Science and Engineering
+Processing: L3_BSCSE_005_probation.csv
+Knowledge Base: program_knowledge_BSCSE.md
+
+╔════════════════════════════════════════════════════════════════╗
+║                    GRADUATION AUDIT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Credits:          48 / 130 required
+CGPA:             1.00
+Standing:         PROBATION
+
+  ⚠⚠⚠ WARNING: STUDENT IS ON ACADEMIC PROBATION (CGPA < 2.00) ⚠⚠⚠
+
+╔════════════════════════════════════════════════════════════════╗
+║                   REQUIREMENT ANALYSIS                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+University Core - Languages:   ⚠ INCOMPLETE (9 / 12)
+  Missing:
+    └─ BAN205: Bangla Language (3 cr)
+University Core - Humanities:  ✓ COMPLETE
+University Core - Social Sciences: ✓ COMPLETE
+University Core - Sciences:    ✓ COMPLETE
+SEPS Core:                     ⚠ INCOMPLETE (11 / 38)
+  Missing:
+    ├─ MAT120: Calculus I (3 cr)
+    ├─ MAT250: Calculus III (3 cr)
+    ├─ MAT361: Probability and Statistics (3 cr)
+    ├─ MAT125: Linear Algebra (3 cr)
+    ├─ MAT350: Engineering Mathematics (3 cr)
+    ├─ PHY108: Physics II with Lab (4 cr)
+    ├─ CHE101: Chemistry I with Lab (4 cr)
+    ├─ EEE452: Engineering Economics (3 cr)
+    └─ CEE110: Engineering Drawing (1 cr)
+Major Core:                    ⚠ INCOMPLETE (10 / 42)
+  Missing:
+    ├─ CSE173: Discrete Mathematics (3 cr)
+    ├─ EEE141: Electrical Circuits I (3 cr)
+    ├─ EEE141L: Electrical Circuits I Lab (1 cr)
+    ├─ EEE111: Analog Electronics I (3 cr)
+    ├─ EEE111L: Analog Electronics I Lab (1 cr)
+    ├─ CSE311: Database Systems (3 cr)
+    ├─ CSE311L: Database Systems Lab (0 cr)
+    ├─ CSE323: Operating Systems Design (3 cr)
+    ├─ CSE327: Software Engineering (3 cr)
+    ├─ CSE331: Microprocessor Interfacing & Embedded Systems (3 cr)
+    ├─ CSE331L: Microprocessor Interfacing & Embedded Systems Lab (0 cr)
+    ├─ CSE373: Design and Analysis of Algorithms (3 cr)
+    ├─ CSE332: Computer Organization and Architecture (3 cr)
+    └─ CSE425: Concepts of Programming Language (3 cr)
+Capstone:                      ⚠ INCOMPLETE (0 / 4)
+  Missing:
+    ├─ CSE299: Junior Design Project I (1 cr)
+    ├─ CSE499A: Senior Design Project I (1.5 cr)
+    └─ CSE499B: Senior Design Project II (1.5 cr)
+Elective Trails:               ⚠ INCOMPLETE (0 / 9)
+  Missing:
+    ├─ CSE401: Advanced Programming Techniques (3 cr)
+    ├─ CSE417: Numerical Methods (3 cr)
+    └─ CSE418: Combinatorial Optimization (3 cr)
+Open Elective:                 ⚠ INCOMPLETE (0 / 3)
+
+  Trail Requirement: ⚠ NOT SATISFIED
+
+
+⚠ Prerequisite Violations: 1
+  └─ MAT130 (Calculus II) taken in Spring2022
+      Prerequisite: MAT120 (Calculus I) — ❌ Missing
+
+╔════════════════════════════════════════════════════════════════╗
+║                   DEFICIENCY REPORT                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Missing Courses: 31 (78 credits)
+
+University Core - Languages:
+  1. BAN205: Bangla Language (3 cr)
+
+SEPS Core:
+  1. MAT120: Calculus I (3 cr)
+       └─ Prerequisite: MAT116 (✓ Complete)
+  2. MAT250: Calculus III (3 cr)
+       └─ Prerequisite: MAT130 (✓ Complete)
+  3. MAT361: Probability and Statistics (3 cr)
+       └─ Prerequisite: MAT120 (❌ Missing)
+  4. MAT125: Linear Algebra (3 cr)
+       └─ Prerequisite: MAT116 (✓ Complete)
+  5. MAT350: Engineering Mathematics (3 cr)
+       └─ Prerequisite: MAT250 (❌ Missing)
+  6. PHY108: Physics II with Lab (4 cr)
+  7. CHE101: Chemistry I with Lab (4 cr)
+  8. EEE452: Engineering Economics (3 cr)
+  9. CEE110: Engineering Drawing (1 cr)
+
+Major Core:
+  1. CSE173: Discrete Mathematics (3 cr)
+  2. EEE141: Electrical Circuits I (3 cr)
+       └─ Prerequisite: PHY107 (✓ Complete)
+  3. EEE141L: Electrical Circuits I Lab (1 cr)
+  4. EEE111: Analog Electronics I (3 cr)
+       └─ Prerequisite: EEE141 (❌ Missing)
+  5. EEE111L: Analog Electronics I Lab (1 cr)
+  6. CSE311: Database Systems (3 cr)
+       └─ Prerequisite: CSE225 (✓ Complete)
+  7. CSE311L: Database Systems Lab (0 cr)
+  8. CSE323: Operating Systems Design (3 cr)
+       └─ Prerequisite: CSE225 (✓ Complete)
+  9. CSE327: Software Engineering (3 cr)
+       └─ Prerequisite: CSE225 (✓ Complete)
+  10. CSE331: Microprocessor Interfacing & Embedded Systems (3 cr)
+       └─ Prerequisite: CSE231 (✓ Complete)
+  11. CSE331L: Microprocessor Interfacing & Embedded Systems Lab (0 cr)
+  12. CSE373: Design and Analysis of Algorithms (3 cr)
+       └─ Prerequisite: CSE225 (✓ Complete)
+  13. CSE332: Computer Organization and Architecture (3 cr)
+       └─ Prerequisite: CSE231 (✓ Complete)
+  14. CSE425: Concepts of Programming Language (3 cr)
+       └─ Prerequisite: CSE225 (✓ Complete)
+
+Capstone:
+  1. CSE299: Junior Design Project I (1 cr) [CAPSTONE - REQUIRED]
+  2. CSE499A: Senior Design Project I (1.5 cr) [CAPSTONE - REQUIRED]
+  3. CSE499B: Senior Design Project II (1.5 cr) [CAPSTONE - REQUIRED]
+
+Elective Trails:
+  1. CSE401: Advanced Programming Techniques (3 cr)
+  2. CSE417: Numerical Methods (3 cr)
+  3. CSE418: Combinatorial Optimization (3 cr)
+
+Open Elective:
+  1. OPEN_ELECTIVE: Open Elective Course (3 cr)
+
+╔════════════════════════════════════════════════════════════════╗
+║                   ACTION ITEMS                               ║
+╚════════════════════════════════════════════════════════════════╝
+
+To graduate, you must:
+  1. Complete BAN205 (3 credits)
+  2. Complete MAT120 (3 credits)
+  3. Complete MAT250 (3 credits)
+  4. Complete MAT361 (3 credits)
+  5. Complete MAT125 (3 credits)
+  6. Complete MAT350 (3 credits)
+  7. Complete PHY108 (4 credits)
+  8. Complete CHE101 (4 credits)
+  9. Complete EEE452 (3 credits)
+  10. Complete CEE110 (1 credits)
+  11. Complete CSE173 (3 credits)
+  12. Complete EEE141 (3 credits)
+  13. Complete EEE141L (1 credits)
+  14. Complete EEE111 (3 credits)
+  15. Complete EEE111L (1 credits)
+  16. Complete CSE311 (3 credits)
+  17. Complete CSE311L (0 credits)
+  18. Complete CSE323 (3 credits)
+  19. Complete CSE327 (3 credits)
+  20. Complete CSE331 (3 credits)
+  21. Complete CSE331L (0 credits)
+  22. Complete CSE373 (3 credits)
+  23. Complete CSE332 (3 credits)
+  24. Complete CSE425 (3 credits)
+  25. Complete CSE299 (1 credits) [REQUIRED]
+  26. Complete CSE499A (1.5 credits) [REQUIRED]
+  27. Complete CSE499B (1.5 credits) [REQUIRED]
+  28. Complete CSE401 (3 credits)
+  29. Complete CSE417 (3 credits)
+  30. Complete CSE418 (3 credits)
+  31. Complete OPEN_ELECTIVE (3 credits)
+
+Total credits needed: 82
+Estimated completion: 6 semester(s)
+
+  ⚠ CRITICAL: Raise CGPA above 2.00 to be eligible for graduation
+
+╔════════════════════════════════════════════════════════════════╗
+║                  GRADUATION ELIGIBILITY                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+RESULT: ❌ NOT ELIGIBLE FOR GRADUATION
+
+Reasons:
+  ├─ Insufficient credits (48 / 130)
+  ├─ CGPA below minimum (1.00 < 2.00) — PROBATION
+  ├─ Missing capstone: CSE299 (Junior Design Project I)
+  ├─ Missing capstone: CSE499A (Senior Design Project I)
+  ├─ Missing capstone: CSE499B (Senior Design Project II)
+  └─ Missing 31 required course(s) (78 credits)
+
+Status: Continue enrollment to complete remaining requirements.
