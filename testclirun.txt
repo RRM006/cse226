@@ -1,0 +1,193 @@
+#!/bin/bash
+# Test CLI run list — 63 test scripts
+# Run these from the project root (bash <path>) or paste into Konsole
+
+(
+	cd testbat/transfers && bash TRANSFER_EEE_TO_LLB_001.sh
+)
+(
+	cd testbat/transfers && bash TRANSFER_LLB_TO_BSCSE_001.sh
+)
+(
+	cd testbat/BSEEE/L3 && bash L3_BSEEE_003_retakes.sh
+)
+(
+	cd testbat/BSEEE/L3 && bash L3_BSEEE_004_probation.sh
+)
+(
+	cd testbat/BSEEE/L3 && bash L3_BSEEE_001_complete.sh
+)
+(
+	cd testbat/BSEEE/L3 && bash L3_BSEEE_005_missing_capstone.sh
+)
+(
+	cd testbat/BSEEE/L3 && bash L3_BSEEE_006_first_class.sh
+)
+(
+	cd testbat/BSEEE/L3 && bash L3_BSEEE_002_deficient.sh
+)
+(
+	cd testbat/LLB/L3 && bash L3_LLB_004_probation.sh
+)
+(
+	cd testbat/LLB/L3 && bash L3_LLB_005_missing_electives.sh
+)
+(
+	cd testbat/LLB/L3 && bash L3_LLB_003_retakes.sh
+)
+(
+	cd testbat/LLB/L3 && bash L3_LLB_002_deficient.sh
+)
+(
+	cd testbat/LLB/L3 && bash L3_LLB_001_complete.sh
+)
+(
+	cd testbat/LLB/L3 && bash L3_LLB_006_first_class.sh
+)
+(
+	cd testbat/LLB/L1 && bash L1_LLB_004_all_grades.sh
+)
+(
+	cd testbat/LLB/L2 && bash L2_LLB_003_retake_improved.sh
+)
+(
+	cd testbat/BSEEE/L1 && bash L1_BSEEE_004_all_grades.sh
+)
+(
+	cd testbat/BSEEE/L2 && bash L2_BSEEE_006_mixed_invalid.sh
+)
+(
+	cd testbat/LLB/L1 && bash L1_LLB_002_invalid_grades.sh
+)
+(
+	cd testbat/LLB/L2 && bash L2_LLB_004_probation.sh
+)
+(
+	cd testbat/BSEEE/L2 && bash L2_BSEEE_003_retake_improved.sh
+)
+(
+	cd testbat/LLB/L2 && bash L2_LLB_005_honors.sh
+)
+(
+	cd testbat/external_transfers/LLB && bash EXT_LLB_002_poor_grades.sh
+)
+(
+	cd testbat/BSEEE/L2 && bash L2_BSEEE_001_cgpa_calc.sh
+)
+(
+	cd testbat/LLB/L2 && bash L2_LLB_001_cgpa_calc.sh
+)
+(
+	cd testbat/BSEEE/L2 && bash L2_BSEEE_005_honors.sh
+)
+(
+	cd testbat/BSEEE/L2 && bash L2_BSEEE_002_waiver.sh
+)
+(
+	cd testbat/external_transfers/BSEEE && bash EXT_BSEEE_001_valid_transfer.sh
+)
+(
+	cd testbat/external_transfers/LLB && bash EXT_LLB_001_valid_transfer.sh
+)
+(
+	cd testbat/external_transfers/BSEEE && bash EXT_BSEEE_002_poor_grades.sh
+)
+(
+	cd testbat/BSEEE/L2 && bash L2_BSEEE_004_probation.sh
+)
+(
+	cd testbat/LLB/L1 && bash L1_LLB_005_core_courses.sh
+)
+(
+	cd testbat/BSEEE/L1 && bash L1_BSEEE_002_invalid_grades.sh
+)
+(
+	cd testbat/LLB/L1 && bash L1_LLB_006_mixed_grades.sh
+)
+(
+	cd testbat/LLB/L1 && bash L1_LLB_001_basic_passing.sh
+)
+(
+	cd testbat/LLB/L1 && bash L1_LLB_003_retakes.sh
+)
+(
+	cd testbat/BSCSE/L1 && bash L1_BSCSE_006_mixed_grades.sh
+)
+(
+	cd testbat/BSCSE/L1 && bash L1_BSCSE_003_retakes.sh
+)
+(
+	cd testbat/BSEEE/L1 && bash L1_BSEEE_005_zero_credit_labs.sh
+)
+(
+	cd testbat/BSCSE/L1 && bash L1_BSCSE_004_all_grades.sh
+)
+(
+	cd testbat/LLB/L2 && bash L2_LLB_006_mixed_invalid.sh
+)
+(
+	cd testbat/BSEEE/L1 && bash L1_BSEEE_001_basic_passing.sh
+)
+(
+	cd testbat/BSCSE/L1 && bash L1_BSCSE_002_invalid_grades.sh
+)
+(
+	cd testbat/BSCSE/L1 && bash L1_BSCSE_001_basic_passing.sh
+)
+(
+	cd testbat/BSEEE/L1 && bash L1_BSEEE_006_mixed_grades.sh
+)
+(
+	cd testbat/LLB/L2 && bash L2_LLB_002_waiver.sh
+)
+(
+	cd testbat/BSEEE/L1 && bash L1_BSEEE_003_retakes.sh
+)
+(
+	cd testbat/BSCSE/L3 && bash L3_BSCSE_005_probation.sh
+)
+(
+	cd testbat/BSCSE/L2 && bash L2_BSCSE_001_cgpa_calc.sh
+)
+(
+	cd testbat/BSCSE/L1 && bash L1_BSCSE_005_zero_credit_labs.sh
+)
+(
+	cd testbat/BSCSE/L3 && bash L3_BSCSE_001_complete.sh
+)
+(
+	cd testbat/BSCSE/L2 && bash L2_BSCSE_005_honors.sh
+)
+(
+	cd testbat/BSCSE/L2 && bash L2_BSCSE_003_retake_improved.sh
+)
+(
+	cd testbat/BSCSE/L2 && bash L2_BSCSE_002_waiver.sh
+)
+(
+	cd testbat/BSCSE/L3 && bash L3_BSCSE_003_retakes.sh
+)
+(
+	cd testbat/BSCSE/L3 && bash L3_BSCSE_004_prereq_violation.sh
+)
+(
+	cd testbat/BSCSE/L2 && bash L2_BSCSE_004_probation.sh
+)
+(
+	cd testbat/BSCSE/L2 && bash L2_BSCSE_006_mixed_invalid.sh
+)
+(
+	cd testbat/BSCSE/L3 && bash L3_BSCSE_002_deficient.sh
+)
+(
+	cd testbat/BSCSE/L3 && bash L3_BSCSE_006_missing_capstone.sh
+)
+(
+	cd testbat/external_transfers/BSCSE && bash EXT_BSCSE_001_valid_transfer.sh
+)
+(
+	cd testbat/external_transfers/BSCSE && bash EXT_BSCSE_003_excessive_transfer.sh
+)
+(
+	cd testbat/external_transfers/BSCSE && bash EXT_BSCSE_002_mixed_grades.sh
+)
