@@ -26,27 +26,27 @@ Last Updated: [update this after every session]
 - ✅ FastAPI starts with `uvicorn backend.main:app` — no errors
 - ✅ `/health` endpoint returns `{"status": "ok", "version": "2.0"}`
 - ✅ `tracking2.md` updated and presented to user
-- ⬜ **USER CONFIRMED: GO AHEAD TO PART 2**
+- [x] **USER CONFIRMED: GO AHEAD TO PART 2**
 
 ---
 
 ### PART 2 — Supabase Auth Middleware & Database Layer
-- ⬜ `backend/database.py` created with all helper functions
-  - ⬜ `get_profile(user_id)`
-  - ⬜ `create_scan(scan_data)`
-  - ⬜ `get_scans_by_user(user_id)`
-  - ⬜ `get_all_scans()` (admin)
-  - ⬜ `delete_scan(scan_id, user_id)`
-- ⬜ `backend/auth.py` created
-  - ⬜ `get_current_user()` dependency validates Supabase JWT
-  - ⬜ `require_admin` dependency raises 403 for non-admin
-  - ⬜ `CurrentUser` model with id, email, role
-- ⬜ Supabase trigger for auto-creating profile on new Google login
-- ⬜ Test endpoint `/api/v1/me` returns correct user info
-- ⬜ Invalid JWT correctly returns 401
-- ⬜ Non-admin correctly gets 403 on admin route
-- ⬜ Real Google account tested — profile auto-created in DB
-- ⬜ `tracking2.md` updated and presented to user
+- [x] `backend/database.py` created with all helper functions
+  - [x] `get_profile(user_id)`
+  - [x] `create_scan(scan_data)`
+  - [x] `get_scans_by_user(user_id)`
+  - [x] `get_all_scans()` (admin)
+  - [x] `delete_scan(scan_id, user_id)`
+- [x] `backend/auth.py` created
+  - [x] `get_current_user()` dependency validates Supabase JWT
+  - [x] `require_admin` dependency raises 403 for non-admin
+  - [x] `CurrentUser` model with id, email, role
+- [x] Supabase trigger for auto-creating profile on new Google login
+- [x] Test endpoint `/api/v1/me` returns correct user info
+- [x] Invalid JWT correctly returns 401
+- [x] Non-admin correctly gets 403 on admin route
+- [x] Real Google account tested — profile auto-created in DB
+- [x] `tracking2.md` updated and presented to user
 - ⬜ **USER CONFIRMED: GO AHEAD TO PART 3**
 
 ---
@@ -209,8 +209,8 @@ Last Updated: [update this after every session]
 
 | Session | Date | Parts Worked | What Was Done | Next Steps |
 |---------|------|-------------|---------------|------------|
-| 1 | — | — | Project started | Begin Part 1 |
-
+| 1 | Mar 7 | 1 | Project started, DB schema, FastAPI skeleton | Begin Part 2 |
+| 2 | Mar 7 | 2 | Supabase Auth middleware, database.py | Begin Part 3 |
 ---
 
 ## Bugs / Issues

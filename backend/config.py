@@ -5,13 +5,19 @@ try:
 except ImportError:
     from pydantic import BaseSettings
 
+
 class Settings(BaseSettings):
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://zxzcnpkfabiiecagczao.supabase.co")
+    SUPABASE_URL: str = os.getenv(
+        "SUPABASE_URL", "https://zxzcnpkfabiiecagczao.supabase.co"
+    )
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "anon_key")
-    SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "service_key")
+    SUPABASE_SERVICE_KEY: str = os.getenv(
+        "SUPABASE_SERVICE_KEY", "service_key"
+    )
     RAILWAY_PORT: int = int(os.getenv("RAILWAY_PORT", "8000"))
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()
