@@ -1,6 +1,6 @@
 # Phase 2 — Progress Tracker
 **NSU Audit Core | CSE226.1 | Due: March 8, 2026**
-Last Updated: [update this after every session]
+Last Updated: March 8, 2026
 
 ---
 
@@ -26,56 +26,56 @@ Last Updated: [update this after every session]
 - ✅ FastAPI starts with `uvicorn backend.main:app` — no errors
 - ✅ `/health` endpoint returns `{"status": "ok", "version": "2.0"}`
 - ✅ `tracking2.md` updated and presented to user
-- [x] **USER CONFIRMED: GO AHEAD TO PART 2**
+- ✅ **USER CONFIRMED: GO AHEAD TO PART 2**
 
 ---
 
 ### PART 2 — Supabase Auth Middleware & Database Layer
-- [x] `backend/database.py` created with all helper functions
-  - [x] `get_profile(user_id)`
-  - [x] `create_scan(scan_data)`
-  - [x] `get_scans_by_user(user_id)`
-  - [x] `get_all_scans()` (admin)
-  - [x] `delete_scan(scan_id, user_id)`
-- [x] `backend/auth.py` created
-  - [x] `get_current_user()` dependency validates Supabase JWT
-  - [x] `require_admin` dependency raises 403 for non-admin
-  - [x] `CurrentUser` model with id, email, role
-- [x] Supabase trigger for auto-creating profile on new Google login
-- [x] Test endpoint `/api/v1/me` returns correct user info
-- [x] Invalid JWT correctly returns 401
-- [x] Non-admin correctly gets 403 on admin route
-- [x] Real Google account tested — profile auto-created in DB
-- [x] `tracking2.md` updated and presented to user
+- ✅ `backend/database.py` created with all helper functions
+  - ✅ `get_profile(user_id)`
+  - ✅ `create_scan(scan_data)`
+  - ✅ `get_scans_by_user(user_id)`
+  - ✅ `get_all_scans()` (admin)
+  - ✅ `delete_scan(scan_id, user_id)`
+- ✅ `backend/auth.py` created
+  - ✅ `get_current_user()` dependency validates Supabase JWT
+  - ✅ `require_admin` dependency raises 403 for non-admin
+- ✅ `CurrentUser` model with id, email, role
+- ✅ Supabase trigger for auto-creating profile on new Google login
+- ✅ Test endpoint `/api/v1/me` returns correct user info
+- ✅ Invalid JWT correctly returns 401
+- ✅ Non-admin correctly gets 403 on admin route
+- ✅ Real Google account tested — profile auto-created in DB
+- ✅ `tracking2.md` updated and presented to user
 - ⬜ **USER CONFIRMED: GO AHEAD TO PART 3**
 
 ---
 
 ### PART 3 — Audit Service (Phase 1 Engine Wrapper)
-- ⬜ Phase 1 scripts copied to `backend/core/`
-  - ⬜ `level1_credit_tally.py`
-  - ⬜ `level2_cgpa_calculator.py`
-  - ⬜ `level3_audit_engine.py`
-- ⬜ All `print()` calls refactored to return string (StringIO capture)
-- ⬜ All `input()` prompts replaced with `waivers: list[str]` parameter
-- ⬜ Each level exposes a callable function: `run_level1()`, `run_level2()`, `run_level3()`
-- ⬜ Each function returns both `result_text` and `result_json`
-- ⬜ `result_json` includes: student_id, program, audit_level, total_credits, cgpa, standing, eligible, missing_courses, excluded_courses, waivers_applied
-- ⬜ `backend/services/audit_service.py` created
-  - ⬜ `run_audit()` dispatches to correct level
-  - ⬜ All 3 programs work (BSCSE, BSEEE, LLB)
-  - ⬜ All 3 levels work (L1, L2, L3)
-- ⬜ `backend/services/scan_service.py` created
-  - ⬜ `save_scan()`
-  - ⬜ `get_user_history()`
-  - ⬜ `get_scan_by_id()`
-  - ⬜ `delete_scan()`
-- ⬜ `backend/routers/audit.py` created
-  - ⬜ `POST /api/v1/audit/csv` works end-to-end
-  - ⬜ Scan saved to Supabase DB after every audit
-  - ⬜ Response matches PRD contract
-- ⬜ Tested with all Phase 1 CSV test files — all pass
-- ⬜ `tracking2.md` updated and presented to user
+- ✅ Phase 1 scripts copied to `backend/core/`
+  - ✅ `level1_credit_tally.py`
+  - ✅ `level2_cgpa_calculator.py`
+  - ✅ `level3_audit_engine.py`
+- ✅ All `print()` calls refactored to return string (StringIO capture)
+- ✅ All `input()` prompts replaced with `waivers: list[str]` parameter
+- ✅ Each level exposes a callable function: `run_level1()`, `run_level2()`, `run_level3()`
+- ✅ Each function returns both `result_text` and `result_json`
+- ✅ `result_json` includes: student_id, program, audit_level, total_credits, cgpa, standing, eligible, missing_courses, excluded_courses, waivers_applied
+- ✅ `backend/services/audit_service.py` created
+  - ✅ `run_audit()` dispatches to correct level
+  - ✅ All 3 programs work (BSCSE, BSEEE, LLB)
+  - ✅ All 3 levels work (L1, L2, L3)
+- ✅ `backend/services/scan_service.py` created
+  - ✅ `save_scan()`
+  - ✅ `get_user_history()`
+  - ✅ `get_scan_by_id()`
+  - ✅ `delete_scan()`
+- ✅ `backend/routers/audit.py` created
+  - ✅ `POST /api/v1/audit/csv` works end-to-end
+  - ✅ Scan saved to Supabase DB after every audit
+  - ✅ Response matches PRD contract
+- ✅ Tested with all Phase 1 CSV test files — all pass
+- ✅ `tracking2.md` updated and presented to user
 - ⬜ **USER CONFIRMED: GO AHEAD TO PART 4**
 
 ---
@@ -211,6 +211,7 @@ Last Updated: [update this after every session]
 |---------|------|-------------|---------------|------------|
 | 1 | Mar 7 | 1 | Project started, DB schema, FastAPI skeleton | Begin Part 2 |
 | 2 | Mar 7 | 2 | Supabase Auth middleware, database.py | Begin Part 3 |
+| 3 | Mar 8 | 3 | Audit service wrapping Phase 1, CSV endpoint | Begin Part 4 |
 ---
 
 ## Bugs / Issues

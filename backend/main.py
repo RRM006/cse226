@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# from routers import audit, history, users
+from backend.routers import audit
+# from routers import history, users
 from fastapi import Depends
-from auth import get_current_user
+from backend.auth import get_current_user
 
 app = FastAPI(title="NSU Audit Core API v2", version="2.0")
 
@@ -27,7 +28,7 @@ def health_check():
     return {"status": "ok", "version": "2.0"}
 
 
-# app.include_router(audit.router, prefix="/api/v1/audit", tags=["Audit"])
+app.include_router(audit.router)
 # app.include_router(history.router, prefix="/api/v1/history")
 # app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 

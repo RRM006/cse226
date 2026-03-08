@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from config import settings
+from backend.config import settings
 
 url: str = settings.SUPABASE_URL
 key: str = settings.SUPABASE_SERVICE_KEY

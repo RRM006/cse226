@@ -177,3 +177,16 @@ All assumptions made during Phase 2 must be logged here immediately.
 
 ## New Assumptions (add here during build)
 
+## Assumption #16 — API Return Structure for Phase 1 Engine
+**Context:** Refactoring Phase 1 scripts to be callable by FastAPI.
+**Assumption:** The core Phase 1 scripts use `io.StringIO` to capture `print()` output rather than rewriting the core visualization logic. They return a `result_text` property for the textual report and a simplified `result_json` object matching the API requirements.
+**Reason:** Rewriting the entire `print_audit_output` function to return purely structured JSON was too intrusive to the Phase 1 engine, and the visual output format still needs to be preserved for the frontend/mobile apps to display.
+**Impact:** Apps display the raw `result_text` log alongside the parsed `summary` details.
+**Source:** OpenCode assumption.
+
+## Assumption #17 — Knowledge File Loading in API
+**Context:** The Level 3 engine needs program knowledge files.
+**Assumption:** The `knowledge_file_content` is passed as a string from the router to the core engine, instead of having the engine read directly from a file path. The API router determines the file path and reads it.
+**Reason:** Easier dependency injection, cleaner testing, and better separation of concerns between API logic and core engine logic.
+**Impact:** Minimal impact, just centralizes file IO in the router layer.
+**Source:** OpenCode assumption.
