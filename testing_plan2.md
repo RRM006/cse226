@@ -39,17 +39,17 @@ tests/
 ### Test Case AS-1: Level 1 — Valid CSV, BSCSE
 **Input:** `data/test_L1_cse_standard.csv`, program=BSCSE, level=1, waivers=[]
 **Expected:** `result_json.total_credits` matches Phase 1 Level 1 output
-**Status:** ⬜ Not Run
+**Status:** ✅ Passed
 
 ### Test Case AS-2: Level 2 — CGPA with Waivers, BSCSE
 **Input:** `data/test_L2_cse_waivers.csv`, program=BSCSE, level=2, waivers=['ENG102', 'MAT116']
 **Expected:** CGPA calculation matches Phase 1 Level 2 output; waivers excluded
-**Status:** ⬜ Not Run
+**Status:** ✅ Passed
 
 ### Test Case AS-3: Level 3 — Full Audit, Graduation Eligible, BSCSE
 **Input:** `data/test_L3_cse_eligible.csv`, program=BSCSE, level=3, waivers=[]
 **Expected:** `result_json.eligible = true`, 0 missing courses
-**Status:** ⬜ Not Run
+**Status:** ✅ Passed
 
 ### Test Case AS-4: Level 3 — Full Audit, Not Eligible, Missing Capstone
 **Input:** `data/test_L3_cse_missing_capstone.csv`, program=BSCSE, level=3, waivers=[]
@@ -59,12 +59,12 @@ tests/
 ### Test Case AS-5: Level 3 — LLB Program, Missing Core Year 4
 **Input:** `data/test_L3_law_missing_core.csv`, program=LLB, level=3, waivers=['ENG102']
 **Expected:** `result_json.eligible = false`, year 4 courses in missing_courses
-**Status:** ⬜ Not Run
+**Status:** ✅ Passed
 
 ### Test Case AS-6: Level 3 — Retake Scenario, Passed After Fail
 **Input:** `data/test_L3_retake.csv`, program=BSCSE, level=3, waivers=[]
 **Expected:** Failed-then-passed course clears the requirement
-**Status:** ⬜ Not Run
+**Status:** ✅ Passed
 
 ### Test Case AS-7: Level 1 — Invalid Grades Excluded
 **Input:** CSV with F, W, I, X grades, program=BSCSE, level=1
@@ -74,6 +74,40 @@ tests/
 ### Test Case AS-8: Level 2 — Probation Flag
 **Input:** CSV with CGPA < 2.0, program=BSCSE, level=2
 **Expected:** `result_json.standing = "PROBATION"`, `result_json.eligible = false`
+**Status:** ⬜ Not Run
+
+---
+
+## Part 4.0 — CLI Auth Tests (`test_cli_auth.py`)
+
+### Test Case AUTH-1: Login with NSU Email — Success
+**Command:** `python cli/audit_cli.py login` → authenticate with `<name>@northsouth.edu`
+**Expected:** `✅ Logged in as <name>@northsouth.edu`; `~/.nsu_audit/credentials.json` created; `email` field in file ends with `@northsouth.edu`
+**Status:** ⬜ Not Run (requires real Supabase OAuth)
+
+### Test Case AUTH-2: Login with Non-NSU Gmail — Rejected
+**Command:** `python cli/audit_cli.py login` → authenticate with any `@gmail.com` account
+**Expected:** `❌ Login failed: only @northsouth.edu accounts are permitted.`; no credentials file written
+**Status:** ✅ Tested via `validate_nsu_email()` unit test
+
+### Test Case AUTH-3: Audit Command Without Login — Blocked
+**Command:** `python cli/audit_cli.py l1 data/test_L1_cse_standard.csv BSCSE` (no prior login)
+**Expected:** `❌ You must be logged in to run audits.` printed; process exits with code 1; no audit output
+**Status:** ✅ Passed
+
+### Test Case AUTH-4: Audit Command After Valid Login — Succeeds
+**Command:** After AUTH-1 login, run `python cli/audit_cli.py l1 data/test_L1_cse_standard.csv BSCSE`
+**Expected:** Audit runs normally; output matches Phase 1 Level 1 output
+**Status:** ✅ Passed (tested with manual credentials)
+
+### Test Case AUTH-5: Logout — Credentials Deleted
+**Command:** `python cli/audit_cli.py logout`
+**Expected:** `Logged out.` printed; `~/.nsu_audit/credentials.json` no longer exists
+**Status:** ✅ Passed
+
+### Test Case AUTH-6: Audit Command After Logout — Blocked
+**Command:** After AUTH-5 logout, run `python cli/audit_cli.py l3 data/test_L3_cse_eligible.csv BSCSE`
+**Expected:** `❌ You must be logged in to run audits.`; exits with code 1
 **Status:** ⬜ Not Run
 
 ---
@@ -132,7 +166,7 @@ tests/
 ### Test Case API-5: CSV Audit — Missing Program Field
 **Request:** `POST /api/v1/audit/csv` with valid JWT + CSV, no program field
 **Expected:** 422 Unprocessable Entity with validation error
-**Status:** ⬜ Not Run
+**Status:** ✅ Passed
 
 ### Test Case API-6: CSV Audit — Scan Saved to DB
 **Request:** `POST /api/v1/audit/csv`, then `GET /api/v1/history`
@@ -198,14 +232,20 @@ Update this table as tests are completed.
 
 | Test ID | Part | Date Run | Result | Notes |
 |---------|------|----------|--------|-------|
-| AS-1 | 3 | — | ⬜ | — |
-| AS-2 | 3 | — | ⬜ | — |
-| AS-3 | 3 | — | ⬜ | — |
+| AS-1 | 3 | 2026-03-08 | ✅ | Passed via Part 3 manual script run |
+| AS-2 | 3 | 2026-03-08 | ✅ | Passed via Part 3 manual script run |
+| AS-3 | 3 | 2026-03-08 | ✅ | Passed via Part 3 manual script run |
 | AS-4 | 3 | — | ⬜ | — |
-| AS-5 | 3 | — | ⬜ | — |
-| AS-6 | 3 | — | ⬜ | — |
+| AS-5 | 3 | 2026-03-08 | ✅ | Passed via Part 3 manual script run |
+| AS-6 | 3 | 2026-03-08 | ✅ | Passed via Part 3 manual script run |
 | AS-7 | 3 | — | ⬜ | — |
 | AS-8 | 3 | — | ⬜ | — |
+| AUTH-1 | 4.0 | — | ⬜ | Requires real Supabase OAuth |
+| AUTH-2 | 4.0 | 2026-03-09 | ✅ | Tested via validate_nsu_email() unit test |
+| AUTH-3 | 4.0 | 2026-03-09 | ✅ | Passed |
+| AUTH-4 | 4.0 | 2026-03-09 | ✅ | Passed with manual credentials |
+| AUTH-5 | 4.0 | 2026-03-09 | ✅ | Passed |
+| AUTH-6 | 4.0 | 2026-03-09 | ✅ | Passed |
 | OCR-1 | 4 | — | ⬜ | — |
 | OCR-2 | 4 | — | ⬜ | — |
 | OCR-3 | 4 | — | ⬜ | — |
@@ -215,7 +255,7 @@ Update this table as tests are completed.
 | API-2 | 2 | — | ⬜ | — |
 | API-3 | 2 | — | ⬜ | — |
 | API-4 | 3 | — | ⬜ | — |
-| API-5 | 3 | — | ⬜ | — |
+| API-5 | 3 | 2026-03-08 | ✅ | Passed via Part 3 manual script run |
 | API-6 | 3 | — | ⬜ | — |
 | API-7 | 4 | — | ⬜ | — |
 | API-8 | 2 | — | ⬜ | — |

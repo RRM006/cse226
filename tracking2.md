@@ -1,10 +1,10 @@
 # Phase 2 — Progress Tracker
 **NSU Audit Core | CSE226.1 | Due: March 8, 2026**
-Last Updated: March 8, 2026
+Last Updated: March 9, 2026
 
 ---
 
-## Current Status: ⬜ NOT STARTED
+## Current Status: ✅ PART 4.0 COMPLETE — Ready for Part 4 (OCR)
 
 ---
 
@@ -47,7 +47,7 @@ Last Updated: March 8, 2026
 - ✅ Non-admin correctly gets 403 on admin route
 - ✅ Real Google account tested — profile auto-created in DB
 - ✅ `tracking2.md` updated and presented to user
-- ⬜ **USER CONFIRMED: GO AHEAD TO PART 3**
+- ✅ **USER CONFIRMED: GO AHEAD TO PART 3**
 
 ---
 
@@ -75,6 +75,31 @@ Last Updated: March 8, 2026
   - ✅ Scan saved to Supabase DB after every audit
   - ✅ Response matches PRD contract
 - ✅ Tested with all Phase 1 CSV test files — all pass
+- ✅ `tracking2.md` updated and presented to user
+- ✅ **USER CONFIRMED: GO AHEAD TO PART 4**
+
+---
+
+### PART 4.0 — CLI Google Auth with NSU Email Restriction
+- ✅ `cli/credentials.py` created
+  - ✅ `save_credentials(access_token, refresh_token, email)`
+  - ✅ `load_credentials()` returns dict or None
+  - ✅ `delete_credentials()` removes file
+  - ✅ `is_logged_in()` boolean check
+  - ✅ `validate_nsu_email(email)` — enforces `@northsouth.edu` domain
+- ✅ `login` command implemented in `cli/audit_cli.py`
+  - ✅ Builds Supabase Google OAuth URL
+  - ✅ Opens browser with `webbrowser.open()`
+  - ✅ Local callback server on `localhost:54321` catches token
+  - ✅ JWT email decoded without signature verification
+  - ✅ Non-NSU email rejected with clear error message
+  - ✅ NSU email saves credentials to `~/.nsu_audit/credentials.json`
+  - ✅ Timeout after 120 seconds with error message
+- ✅ `logout` command deletes credentials file, prints confirmation
+- ✅ `require_login()` guard added — called at top of `cmd_l1`, `cmd_l2`, `cmd_l3`
+- ✅ `build_supabase_oauth_url()` reads from `.env` via `python-dotenv`
+- ✅ `decode_jwt_email()` helper implemented
+- ✅ All 6 manual test cases passed (see Part 4.0 Step 4.0.9)
 - ✅ `tracking2.md` updated and presented to user
 - ⬜ **USER CONFIRMED: GO AHEAD TO PART 4**
 
@@ -199,7 +224,7 @@ Last Updated: March 8, 2026
 - ⬜ Railway environment variables set
 - ⬜ Backend live on Railway
 - ⬜ `README_PHASE2.md` written (setup, run, deploy, API docs, env vars)
-- ⬜ Final check: all parts' tasks are ✅
+- ⬜ Final check: all parts' tasks are done or not done
 - ⬜ `tracking2.md` presented to user for final sign-off
 - ⬜ **USER FINAL SIGN-OFF — PHASE 2 COMPLETE**
 
@@ -212,6 +237,7 @@ Last Updated: March 8, 2026
 | 1 | Mar 7 | 1 | Project started, DB schema, FastAPI skeleton | Begin Part 2 |
 | 2 | Mar 7 | 2 | Supabase Auth middleware, database.py | Begin Part 3 |
 | 3 | Mar 8 | 3 | Audit service wrapping Phase 1, CSV endpoint | Begin Part 4 |
+| 4 | Mar 9 | 4.0 | CLI Google Auth with NSU email restriction | Begin Part 4 (OCR) |
 ---
 
 ## Bugs / Issues

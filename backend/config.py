@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     RAILWAY_PORT: int = int(os.getenv("RAILWAY_PORT", "8000"))
 
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 
 
 settings = Settings()

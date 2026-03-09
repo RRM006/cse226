@@ -16,3 +16,4 @@ flake8
 isort
 pre-commit
 pydantic-settings
+python-dotenv

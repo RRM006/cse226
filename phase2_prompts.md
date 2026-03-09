@@ -304,35 +304,357 @@ Verify the response matches the PRD contract.
 
 ---
 
-# PART 4 — OCR Service
+# PART 4.0 — CLI Google Auth with NSU Email Restriction
 
 > ⚠️ Do NOT begin until the user has confirmed Part 3 is complete.
+> ⚠️ Do NOT begin Part 4 (OCR) until the user has confirmed Part 4.0 is complete.
+
+## CONTEXT
+
+This part wires Google OAuth into the CLI **before** the OCR service is built. From this point forward, all CLI audit commands (l1, l2, l3) require the user to be logged in with a verified `@northsouth.edu` Google account. The offline (Phase 1) logic is untouched — this auth layer wraps around it.
+
+## TASK: Add NSU-restricted Google Auth to the CLI
+
+---
+
+### Step 4.0.1 — Credentials Manager
+
+Create `cli/credentials.py`:
+
+```python
+import json
+import os
+from pathlib import Path
+
+CREDENTIALS_DIR = Path.home() / ".nsu_audit"
+CREDENTIALS_FILE = CREDENTIALS_DIR / "credentials.json"
+
+def save_credentials(access_token: str, refresh_token: str, email: str) -> None:
+    """Save JWT and user info to local credentials file."""
+    CREDENTIALS_DIR.mkdir(exist_ok=True)
+    with open(CREDENTIALS_FILE, "w") as f:
+        json.dump(
+            {"access_token": access_token, "refresh_token": refresh_token, "email": email},
+            f,
+        )
+
+def load_credentials() -> dict | None:
+    """Load saved credentials. Returns None if not found."""
+    if not CREDENTIALS_FILE.exists():
+        return None
+    with open(CREDENTIALS_FILE, "r") as f:
+        return json.load(f)
+
+def delete_credentials() -> None:
+    """Remove credentials file on logout."""
+    if CREDENTIALS_FILE.exists():
+        CREDENTIALS_FILE.unlink()
+
+def is_logged_in() -> bool:
+    return CREDENTIALS_FILE.exists()
+```
+
+---
+
+### Step 4.0.2 — NSU Email Validator
+
+Inside `cli/credentials.py`, add:
+
+```python
+NSU_EMAIL_DOMAIN = "northsouth.edu"
+
+def validate_nsu_email(email: str) -> bool:
+    """Return True only if email ends with @northsouth.edu."""
+    return email.strip().lower().endswith(f"@{NSU_EMAIL_DOMAIN}")
+```
+
+This check must be enforced **after** Google login returns the user's email from the Supabase JWT — not before, because we rely on Google to verify ownership.
+
+---
+
+### Step 4.0.3 — Login Command
+
+In `cli/audit_cli.py`, implement the `login` command:
+
+**Flow:**
+1. Generate a Supabase Google OAuth URL (redirect to `http://localhost:54321/callback`)
+2. Open the URL in the user's default browser with `webbrowser.open()`
+3. Start a temporary local HTTP server on `localhost:54321` to catch the OAuth callback
+4. Extract the `access_token` and `refresh_token` from the callback URL fragment/query
+5. Decode the JWT payload (without verifying — just read the `email` claim)
+6. **Check:** if `email` does not end with `@northsouth.edu`, print an error and stop — do NOT save credentials
+7. Save credentials via `credentials.save_credentials()`
+8. Print: `✅ Logged in as <email>`
+
+**Error cases to handle:**
+- Non-NSU email → `❌ Login failed: only @northsouth.edu accounts are permitted.`
+- Browser fails to open → print the URL and ask user to open manually
+- Callback times out after 120 seconds → `❌ Login timed out. Please try again.`
+
+**Suggested implementation sketch:**
+```python
+import webbrowser
+import http.server
+import threading
+import urllib.parse
+
+def cmd_login():
+    oauth_url = build_supabase_oauth_url()  # construct from SUPABASE_URL + anon key
+    print("Opening browser for NSU Google login...")
+    webbrowser.open(oauth_url)
+
+    token_result = {}
+
+    class CallbackHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            parsed = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed.query)
+            token_result["access_token"] = params.get("access_token", [None])[0]
+            token_result["refresh_token"] = params.get("refresh_token", [None])[0]
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"<h2>Login complete. Return to your terminal.</h2>")
+
+        def log_message(self, *args):
+            pass  # silence server logs
+
+    server = http.server.HTTPServer(("localhost", 54321), CallbackHandler)
+    server.timeout = 120
+    server.handle_request()
+
+    access_token = token_result.get("access_token")
+    if not access_token:
+        print("❌ Login failed: no token received.")
+        return
+
+    email = decode_jwt_email(access_token)  # base64-decode the JWT payload
+    if not validate_nsu_email(email):
+        print("❌ Login failed: only @northsouth.edu accounts are permitted.")
+        return
+
+    save_credentials(access_token, token_result.get("refresh_token", ""), email)
+    print(f"✅ Logged in as {email}")
+```
+
+---
+
+### Step 4.0.4 — Logout Command
+
+```python
+def cmd_logout():
+    delete_credentials()
+    print("Logged out.")
+```
+
+---
+
+### Step 4.0.5 — Auth Guard for Audit Commands
+
+In `cli/audit_cli.py`, add an `require_login()` guard that is called at the **top** of every audit command handler (l1, l2, l3):
+
+```python
+def require_login():
+    """Exit with a message if user is not logged in."""
+    if not is_logged_in():
+        print("❌ You must be logged in to run audits.")
+        print("   Run: python cli/audit_cli.py login")
+        raise SystemExit(1)
+```
+
+Call `require_login()` as the first line inside `cmd_l1()`, `cmd_l2()`, `cmd_l3()`.
+
+The offline Phase 1 logic itself does not change — `require_login()` is purely a pre-flight check.
+
+---
+
+### Step 4.0.6 — CLI Entry Point
+
+Make sure `cli/audit_cli.py` handles these top-level commands via `argparse` or `sys.argv`:
+
+```
+python cli/audit_cli.py login              # Google OAuth → NSU email check → save token
+python cli/audit_cli.py logout             # Delete saved token
+python cli/audit_cli.py l1 <csv> <prog>   # Requires login; runs Level 1 audit
+python cli/audit_cli.py l2 <csv> <prog>   # Requires login; runs Level 2 audit
+python cli/audit_cli.py l3 <csv> <prog>   # Requires login; runs Level 3 audit
+```
+
+Add a `--help` message that explains all commands and the NSU email requirement.
+
+---
+
+### Step 4.0.7 — Supabase OAuth URL Builder
+
+In `cli/audit_cli.py` or a new `cli/auth_helpers.py`:
+
+```python
+import os
+
+def build_supabase_oauth_url() -> str:
+    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
+    redirect = "http://localhost:54321/callback"
+    return (
+        f"{supabase_url}/auth/v1/authorize"
+        f"?provider=google"
+        f"&redirect_to={redirect}"
+    )
+```
+
+Load `.env` at CLI startup using `python-dotenv` (add `python-dotenv` to `requirements.txt` if not present).
+
+---
+
+### Step 4.0.8 — JWT Email Decoder
+
+```python
+import base64
+import json
+
+def decode_jwt_email(token: str) -> str:
+    """Extract email from JWT payload without verifying signature."""
+    payload_b64 = token.split(".")[1]
+    # Pad base64 to a multiple of 4
+    payload_b64 += "=" * (4 - len(payload_b64) % 4)
+    payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+    return payload.get("email", "")
+```
+
+---
+
+### Step 4.0.9 — Manual Test Checklist
+
+Run these manually to verify before marking Part 4.0 complete:
+
+1. `python cli/audit_cli.py login` — browser opens, login with NSU account → `✅ Logged in as <name>@northsouth.edu`
+2. `python cli/audit_cli.py login` — login with a non-NSU Gmail → `❌ Login failed: only @northsouth.edu accounts are permitted.`
+3. `python cli/audit_cli.py l1 data/test_L1_cse_standard.csv BSCSE` — without prior login → `❌ You must be logged in`
+4. After login: `python cli/audit_cli.py l1 data/test_L1_cse_standard.csv BSCSE` — runs successfully
+5. `python cli/audit_cli.py logout` → `Logged out.`
+6. `python cli/audit_cli.py l3 data/test_L3_cse_eligible.csv BSCSE` — after logout → `❌ You must be logged in`
+
+---
+
+## COMPLETION GATE — Part 4.0
+
+Before marking Part 4.0 done and moving to Part 4 (OCR):
+
+- [ ] `cli/credentials.py` created with save / load / delete / is_logged_in / validate_nsu_email
+- [ ] `login` command opens browser and handles OAuth callback
+- [ ] Non-NSU Gmail login is rejected with clear error message
+- [ ] NSU email login saves credentials to `~/.nsu_audit/credentials.json`
+- [ ] `logout` command deletes credentials file
+- [ ] `l1`, `l2`, `l3` commands all call `require_login()` and block if not logged in
+- [ ] All 6 manual test cases above pass
+- [ ] `tracking2.md` updated with Part 4.0 items marked ✅
+- [ ] `testing_plan2.md` test cases AUTH-1 through AUTH-6 verified
+
+**Present `tracking2.md` to the user. Wait for explicit "go ahead" before starting Part 4 (OCR).**
+
+---
+
+---
+
+# PART 4 — OCR Service
+
+> ⚠️ Do NOT begin until the user has confirmed Part 4.0 is complete.
 
 ## TASK: Build the EasyOCR pipeline to extract transcript data from images
 
 ### Step 4.1 — OCR Service
 Create `backend/services/ocr_service.py`.
 
-The pipeline must:
-1. Accept an uploaded image (JPG, PNG) or PDF first page
-2. Pre-process with OpenCV:
+#### Step 4.1.0 — PDF Support (do this first, before any other OCR code)
+
+Add `pdf2image` and `poppler-utils` support so users can upload a real NSU transcript PDF directly — not just images.
+
+Add to `backend/requirements.txt`:
+```
+pdf2image
+```
+
+> Note: `pdf2image` requires `poppler` installed on the system.
+> - Linux/Railway: `apt-get install poppler-utils`
+> - Mac (local dev): `brew install poppler`
+> - Add a `apt-packages.txt` or `nixpacks.toml` in the project root for Railway to install it automatically:
+>   ```
+>   # apt-packages.txt
+>   poppler-utils
+>   ```
+
+At the very top of `extract_transcript(file_bytes: bytes) -> dict` in `ocr_service.py`, before any OpenCV or EasyOCR code, add this input normalisation block:
+
+```python
+import numpy as np
+import cv2
+from pdf2image import convert_from_bytes
+from PIL import Image
+
+def _bytes_to_cv2_image(file_bytes: bytes) -> np.ndarray:
+    """
+    Accept PDF, JPG, or PNG bytes and always return a cv2 numpy image.
+    For PDFs, only the first page is used.
+    """
+    # Detect PDF by magic bytes
+    if file_bytes[:4] == b"%PDF":
+        # Convert first page of PDF to PIL Image at 300 DPI for good OCR resolution
+        pages = convert_from_bytes(file_bytes, dpi=300, first_page=1, last_page=1)
+        pil_image = pages[0]
+        # Convert PIL Image → numpy array → BGR for OpenCV
+        return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+    else:
+        # JPG or PNG — decode directly with OpenCV
+        nparr = np.frombuffer(file_bytes, np.uint8)
+        return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+```
+
+Call `_bytes_to_cv2_image(file_bytes)` as the **first line** of `extract_transcript()`. The returned numpy array is then used for all downstream OpenCV and EasyOCR processing. Nothing else in the pipeline needs to know whether the original input was a PDF or an image.
+
+#### Step 4.1.1 — Two-Column Layout Handling
+
+NSU transcripts use a **two-column layout** (left half and right half of the page, each with its own semester block). The row clustering must account for this:
+
+- After EasyOCR returns all text boxes, split them into **left group** (x-center < page_width / 2) and **right group** (x-center ≥ page_width / 2)
+- Cluster rows within each group independently by Y-coordinate (within 10px = same row)
+- Process left group rows first (top to bottom), then right group rows (top to bottom)
+- Semester header rows (e.g. "Summer 2009", "Fall 2010") reset the current semester label for all rows that follow within that group
+
+#### Step 4.1.2 — Full Pipeline
+
+The complete pipeline for `extract_transcript(file_bytes: bytes) -> dict` must:
+
+1. **Normalise input** — call `_bytes_to_cv2_image(file_bytes)` (handles PDF and images)
+2. **Pre-process with OpenCV:**
    - Convert to grayscale
    - Apply adaptive thresholding for contrast
-   - Deskew if rotation detected
-3. Run EasyOCR with English language
-4. Cluster text boxes by Y-coordinate to identify rows
-5. For each row, map detected text to: `course_code`, `course_name`, `credits`, `grade`, `semester`
-6. Validate each field:
+   - Deskew if rotation detected (compute skew angle from Hough lines, rotate to correct)
+3. **Run EasyOCR** with English language on the processed image
+4. **Split into left/right column groups** based on X-coordinate midpoint (Step 4.1.1)
+5. **Cluster by Y-coordinate** within each group — boxes within 10px Y of each other are the same row
+6. **Detect semester headers** — if a row contains only a semester string (e.g. `"Spring 2012"`, `"Fall 2009"`), store it as the current semester label; do not treat it as a course row
+7. **Map each course row to columns:** `course_code`, `course_name`, `credits`, `grade`, `semester`
+   - Use X-position ranges calibrated to the transcript column layout to assign each text box to the correct field
+8. **Validate each field:**
    - `course_code`: must match regex `[A-Z]{2,4}\d{3}[A-Z]?`
-   - `grade`: must be one of the valid NSU grades
-   - `credits`: must be 0, 1, 2, or 3
-7. Return:
+   - `grade`: must be one of `A, A-, B+, B, B-, C+, C, C-, D+, D, F, I, W, WV, X`
+   - `credits`: must be `0`, `1`, `2`, or `3`
+9. **Score confidence per row** — average the EasyOCR confidence values of all boxes in the row
+10. **Flag low-confidence rows** — if row confidence < 0.70, add to `warnings` list; still include the row in output (do not drop it silently)
+11. **Return:**
+
 ```python
 {
   "rows": [
-    {"course_code": "CSE115", "course_name": "...", "credits": 3, "grade": "A", "semester": "Spring 2023", "confidence": 0.94}
+    {
+      "course_code": "EEE141",
+      "course_name": "Electrical Circuits",
+      "credits": 3,
+      "grade": "C",
+      "semester": "Summer 2009",
+      "confidence": 0.91
+    }
   ],
-  "csv_text": "course_code,course_name,...\nCSE115,...",
+  "csv_text": "course_code,course_name,credits,grade,semester\nEEE141,Electrical Circuits,3,C,Summer 2009\n...",
   "warnings": ["Low confidence on row 5: grade unclear"],
   "confidence_avg": 0.89
 }
@@ -357,13 +679,18 @@ Write `tests/test_ocr.py`:
 - Test that extracted CSV feeds correctly into Level 3 audit
 
 ## COMPLETION GATE — Part 4
-- [ ] EasyOCR successfully reads a sample NSU transcript image
-- [ ] Row parser correctly extracts course_code, grade, credits
-- [ ] Low-confidence rows are flagged, not silently dropped
-- [ ] OCR endpoint works end-to-end
+- [ ] `pdf2image` added to `requirements.txt` and `poppler-utils` install documented
+- [ ] PDF upload correctly converts first page to image before OCR
+- [ ] JPG and PNG uploads still work unchanged
+- [ ] Two-column layout correctly parsed — left and right semester blocks both extracted
+- [ ] Semester headers correctly detected and attached to following course rows
+- [ ] EasyOCR successfully reads a real NSU transcript image/PDF
+- [ ] Row parser correctly extracts course_code, course_name, credits, grade, semester
+- [ ] Low-confidence rows are flagged in warnings, not silently dropped
+- [ ] OCR endpoint works end-to-end for both image and PDF input
 - [ ] OCR result feeds into audit engine and produces correct output
 - [ ] Tests in `test_ocr.py` pass
-- [ ] Update `tracking.md`
+- [ ] Update `tracking2.md`
 
 **Present `tracking.md` to the user. Wait for "go ahead" before Part 5.**
 
