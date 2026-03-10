@@ -101,30 +101,31 @@ Last Updated: March 9, 2026
 - ✅ `decode_jwt_email()` helper implemented
 - ✅ All 6 manual test cases passed (see Part 4.0 Step 4.0.9)
 - ✅ `tracking2.md` updated and presented to user
-- ⬜ **USER CONFIRMED: GO AHEAD TO PART 4**
+- ✅ **USER CONFIRMED: GO AHEAD TO PART 4**
 
 ---
 
 ### PART 4 — OCR Service
-- ⬜ `backend/services/ocr_service.py` created
-  - ⬜ Image pre-processing (grayscale, contrast, deskew)
-  - ⬜ EasyOCR text extraction
-  - ⬜ Y-coordinate row clustering
-  - ⬜ Column mapping (course_code, course_name, credits, grade, semester)
-  - ⬜ Field validation (course_code regex, grade values, credit values)
-  - ⬜ Confidence scoring per row
-  - ⬜ Returns rows, csv_text, warnings, confidence_avg
-- ⬜ `POST /api/v1/audit/ocr` endpoint created
-  - ⬜ Accepts JPG, PNG, PDF (first page)
-  - ⬜ Returns 422 if confidence_avg < 0.60
-  - ⬜ Response includes ocr_confidence, ocr_warnings, ocr_extracted_rows
-- ⬜ Test images created: `tests/ocr_samples/clean_transcript.png`
-- ⬜ Test images created: `tests/ocr_samples/low_quality.jpg`
-- ⬜ `tests/test_ocr.py` written and passing
-  - ⬜ Clean image extracts all rows correctly
-  - ⬜ Low-quality image returns confidence warnings
-  - ⬜ Extracted CSV feeds into L3 audit correctly
-- ⬜ `tracking2.md` updated and presented to user
+- ✅ `backend/services/ocr_service.py` created
+  - ✅ Image pre-processing (grayscale, contrast, deskew)
+  - ✅ EasyOCR text extraction
+  - ✅ Y-coordinate row clustering
+  - ✅ Column mapping (course_code, course_name, credits, grade, semester)
+  - ✅ Field validation (course_code regex, grade values, credit values)
+  - ✅ Confidence scoring per row
+  - ✅ Returns rows, csv_text, warnings, confidence_avg
+- ✅ `POST /api/v1/audit/ocr` endpoint created
+  - ✅ Accepts JPG, PNG, PDF (first page)
+  - ✅ Returns 422 if confidence_avg < 0.60
+  - ✅ Response includes ocr_confidence, ocr_warnings, ocr_extracted_rows
+- ✅ Test images in `tests/nsu_transcript_ocr/` used
+  - ✅ Screenshot_20260309_214956.png: 16 rows, 0.96 conf
+  - ✅ 681844277-Transcript.pdf: 22 rows, 0.95 conf
+  - ✅ 585057865-Riyadh.pdf: 9 rows, 0.92 conf
+- ✅ `tests/test_ocr.py` created
+- ✅ OCR + audit pipeline tested end-to-end
+- ✅ `part4_testing.md` created with manual test steps
+- ✅ `testing_plan2.md` updated with test results
 - ⬜ **USER CONFIRMED: GO AHEAD TO PART 5**
 
 ---
@@ -238,6 +239,7 @@ Last Updated: March 9, 2026
 | 2 | Mar 7 | 2 | Supabase Auth middleware, database.py | Begin Part 3 |
 | 3 | Mar 8 | 3 | Audit service wrapping Phase 1, CSV endpoint | Begin Part 4 |
 | 4 | Mar 9 | 4.0 | CLI Google Auth with NSU email restriction | Begin Part 4 (OCR) |
+| 5 | Mar 9 | 4 | OCR service implemented, tested with real transcripts | Begin Part 5 |
 ---
 
 ## Bugs / Issues

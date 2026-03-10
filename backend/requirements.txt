@@ -5,6 +5,8 @@ python-multipart
 easyocr
 opencv-python-headless
 pillow
+pdf2image
+poppler-utils
 asyncpg
 python-jose[cryptography]
 httpx

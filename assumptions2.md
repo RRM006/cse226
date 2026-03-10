@@ -190,3 +190,35 @@ All assumptions made during Phase 2 must be logged here immediately.
 **Reason:** Easier dependency injection, cleaner testing, and better separation of concerns between API logic and core engine logic.
 **Impact:** Minimal impact, just centralizes file IO in the router layer.
 **Source:** OpenCode assumption.
+
+## Assumption #18 — OCR Row Parsing Strategy
+**Context:** EasyOCR returns raw text with bounding boxes, need to map to transcript table rows.
+**Assumption:** Rows are detected by clustering text elements with similar Y-coordinates (within 15px tolerance). Columns are mapped by X-coordinate position: course_code (left), course_name (middle), credits (right-middle), grade (right), semester (far right).
+**Reason:** Standard table extraction approach for OCR output.
+**Impact:** May need tuning if transcript layout differs significantly from expected format.
+**Source:** OpenCode assumption.
+
+## Assumption #19 — OCR Course Code Pattern
+**Context:** Need to validate extracted course codes.
+**Assumption:** Course codes follow pattern: 2-4 uppercase letters followed by 3 digits (e.g., CSE115, ENG102, MAT116). Regex: `^[A-Z]{2,4}\d{3}$`.
+**Reason:** Based on Phase 1 code showing courses like ENG102, MAT116, CSE115.
+**Impact:** Non-standard course codes will be flagged as warnings.
+**Source:** OpenCode assumption.
+
+## Assumption #20 — OCR Row Detection Strategy
+**Context:** EasyOCR returns individual word bounding boxes, not full rows.
+**Assumption:** Rows are detected by finding text that matches course code pattern, then grouping nearby text elements on the same Y-coordinate (within 20px tolerance). Course code is used as anchor, other fields extracted from adjacent text.
+**Reason:** More robust than clustering all text - focuses on identifiable course codes.
+**Impact:** May miss rows with unreadable course codes but reduces false positives.
+**Source:** OpenCode assumption.
+
+## Assumption #21 — OCR Confidence Rules
+**Context:** PRD specifies confidence thresholds for OCR output.
+**Assumption:**
+- Row confidence ≥ 0.85 → accepted as-is
+- Row confidence 0.70–0.84 → accepted with warning flagged
+- Row confidence < 0.70 → row excluded from output
+- Overall average confidence < 0.60 → API returns 422 error
+**Reason:** Per PRD Section 8 requirements.
+**Impact:** Users with poor quality images must re-upload clearer versions.
+**Source:** PRD requirement.

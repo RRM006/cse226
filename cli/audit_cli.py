@@ -238,6 +238,160 @@ def cmd_l3(csv_path: str, program: str = None):
     level3_main()
 
 
+def get_ocr_audit_level():
+    """Prompt user for audit level."""
+    while True:
+        try:
+            level = input("Enter audit level (1, 2, or 3): ").strip()
+            if level in ('1', '2', '3'):
+                return int(level)
+            print("Please enter 1, 2, or 3")
+        except (EOFError, KeyboardInterrupt):
+            print("\nCancelled.")
+            raise SystemExit(0)
+
+
+def get_ocr_program():
+    """Prompt user for program."""
+    while True:
+        try:
+            program = input("Enter program (BSCSE, BSEEE, or LLB): ").strip().upper()
+            if program in ('BSCSE', 'BSEEE', 'LLB'):
+                return program
+            print("Please enter BSCSE, BSEEE, or LLB")
+        except (EOFError, KeyboardInterrupt):
+            print("\nCancelled.")
+            raise SystemExit(0)
+
+
+def get_ocr_file_path():
+    """Prompt user for file path."""
+    while True:
+        try:
+            file_path = input("Enter file path (PNG, JPG, or PDF): ").strip()
+            if file_path:
+                return file_path
+            print("Please enter a file path")
+        except (EOFError, KeyboardInterrupt):
+            print("\nCancelled.")
+            raise SystemExit(0)
+
+
+def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None):
+    """Run OCR on image/PDF and then audit."""
+    require_login()
+    
+    import asyncio
+    from pathlib import Path as FilePath
+    
+    # If no file path provided, ask interactively
+    if not file_path:
+        file_path = get_ocr_file_path()
+    
+    # Resolve file path
+    file_path_obj = FilePath(file_path)
+    if not file_path_obj.is_absolute():
+        file_path_obj = FilePath.cwd() / file_path
+    
+    if not file_path_obj.exists():
+        print(f"❌ File not found: {file_path_obj}")
+        raise SystemExit(1)
+    
+    # Check file type
+    ext = file_path_obj.suffix.lower()
+    if ext not in ('.png', '.jpg', '.jpeg', '.pdf'):
+        print("❌ File must be PNG, JPG, or PDF")
+        raise SystemExit(1)
+    
+    print(f"\n📄 Processing: {file_path_obj.name}")
+    print(f"🔍 Running OCR...")
+    
+    # Load file
+    with open(file_path_obj, 'rb') as f:
+        file_bytes = f.read()
+    
+    # Import backend services
+    from backend.services.ocr_service import process_ocr, process_pdf_first_page
+    from backend.services.audit_service import run_audit
+    
+    async def run_ocr_audit():
+        # Convert PDF if needed
+        if ext == '.pdf':
+            img_bytes = await process_pdf_first_page(file_bytes)
+        else:
+            img_bytes = file_bytes
+        
+        # Run OCR
+        ocr_result = await process_ocr(img_bytes)
+        
+        print(f"   OCR Confidence: {ocr_result.confidence_avg:.2f}")
+        print(f"   Rows Extracted: {ocr_result.extracted_row_count}")
+        
+        if ocr_result.warnings:
+            print(f"   Warnings: {len(ocr_result.warnings)}")
+        
+        if ocr_result.extracted_row_count == 0:
+            print("❌ No course data could be extracted from the image")
+            raise SystemExit(1)
+        
+        # Ask for program if not provided
+        prog = program
+        if not prog:
+            prog = get_ocr_program()
+        
+        # Ask for audit level if not provided
+        level = audit_level
+        if level is None:
+            level = get_ocr_audit_level()
+        
+        print(f"\n📊 Running Level {level} Audit for {prog}...")
+        
+        # Find knowledge file
+        project_root = FilePath(__file__).parent.parent
+        knowledge_file = project_root / "program_knowledge" / f"program_knowledge_{prog}.md"
+        
+        if level == 3 and not knowledge_file.exists():
+            print(f"❌ Knowledge file not found: {knowledge_file}")
+            raise SystemExit(1)
+        
+        # Run audit
+        audit_result = await run_audit(
+            csv_text=ocr_result.csv_text,
+            program=prog,
+            audit_level=level,
+            waivers=[],
+            knowledge_file=str(knowledge_file) if level == 3 else ""
+        )
+        
+        return ocr_result, audit_result
+    
+    # Run async function
+    try:
+        ocr_result, audit_result = asyncio.run(run_ocr_audit())
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        raise SystemExit(1)
+    
+    # Print result
+    print("\n" + "=" * 60)
+    print(audit_result.get('result_text', 'No output'))
+    print("=" * 60)
+    
+    # Print summary
+    print("\n📋 SUMMARY:")
+    print(f"   Program: {audit_result.get('program')}")
+    print(f"   Level: {audit_result.get('audit_level')}")
+    print(f"   Total Credits: {audit_result.get('total_credits')}")
+    if audit_result.get('cgpa'):
+        print(f"   CGPA: {audit_result.get('cgpa')}")
+    if audit_result.get('standing'):
+        print(f"   Standing: {audit_result.get('standing')}")
+    if audit_result.get('eligible') is not None:
+        print(f"   Eligible: {'Yes' if audit_result.get('eligible') else 'No'}")
+    if audit_result.get('missing_courses'):
+        print(f"   Missing Courses: {', '.join(audit_result.get('missing_courses', []))}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="NSU Audit Core CLI",
@@ -249,8 +403,10 @@ Examples:
   python cli/audit_cli.py l1 data/test.csv BSCSE   # Run Level 1 audit
   python cli/audit_cli.py l2 data/test.csv BSCSE   # Run Level 2 audit
   python cli/audit_cli.py l3 data/test.csv BSCSE   # Run Level 3 audit
+  python cli/audit_cli.py ocr image.png           # OCR + audit (prompts for level)
+  python cli/audit_cli.py ocr image.png BSEEE 3   # OCR + Level 3 audit
 
-Note: All audit commands (l1, l2, l3) require login with @northsouth.edu email.
+Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu email.
         """,
     )
 
@@ -291,6 +447,30 @@ Note: All audit commands (l1, l2, l3) require login with @northsouth.edu email.
         help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
     )
 
+    # OCR command
+    ocr_parser = subparsers.add_parser(
+        "ocr", help="Run OCR on image/PDF and then audit"
+    )
+    ocr_parser.add_argument(
+        "file",
+        nargs="?",
+        default=None,
+        help="Path to image (PNG, JPG) or PDF file - will prompt if not provided"
+    )
+    ocr_parser.add_argument(
+        "program",
+        nargs="?",
+        default=None,
+        help="Program (BSCSE, BSEEE, LLB) - will prompt if not provided",
+    )
+    ocr_parser.add_argument(
+        "level",
+        nargs="?",
+        type=int,
+        default=None,
+        help="Audit level (1, 2, or 3) - will prompt if not provided",
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -307,6 +487,8 @@ Note: All audit commands (l1, l2, l3) require login with @northsouth.edu email.
         cmd_l2(args.csv, args.program)
     elif args.command == "l3":
         cmd_l3(args.csv, args.program)
+    elif args.command == "ocr":
+        cmd_ocr(args.file, args.program, args.level)
 
 
 if __name__ == "__main__":

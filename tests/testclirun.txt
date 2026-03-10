@@ -2,6 +2,19 @@
 # Test CLI run list — 63 test scripts
 # Run these from the project root (bash <path>) or paste into Konsole
 
+
+
+
+# Interactive mode (prompts for program & level):
+python cli/audit_cli.py ocr tests/nsu_transcript_ocr/681844277-Transcript.pdf
+
+# With program (prompts for level):
+python cli/audit_cli.py ocr tests/nsu_transcript_ocr/681844277-Transcript.pdf BSEEE
+
+# Full arguments:
+python cli/audit_cli.py ocr tests/nsu_transcript_ocr/681844277-Transcript.pdf BSEEE 3
+
+
 (
 	cd testbat/transfers && bash TRANSFER_EEE_TO_LLB_001.sh
 )
