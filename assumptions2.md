@@ -229,3 +229,10 @@ All assumptions made during Phase 2 must be logged here immediately.
 **Reason:** Phase 1 scripts print to stdout only; need backend service for structured API response.
 **Impact:** Slight difference in output format between offline and remote modes.
 **Source:** OpenCode assumption.
+
+## Assumption #23 — Frontend API URL Configuration
+**Context:** Frontend needs to know the backend API URL.
+**Assumption:** Frontend uses environment variable VITE_API_URL which defaults to http://localhost:8000 for local development. For production, this should be set to the Railway deployment URL.
+**Reason:** Need flexible configuration for different environments.
+**Impact:** Must set VITE_API_URL in Vercel dashboard for production deployment.
+**Source:** OpenCode assumption. Date: March 10, 2026.
