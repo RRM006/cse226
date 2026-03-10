@@ -1,11 +1,52 @@
 import os
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from pydantic import BaseModel
+from typing import Optional, List
+
 from backend.auth import get_current_user, CurrentUser
 from backend.services.audit_service import run_audit
 from backend.services.scan_service import save_scan
 from backend.services.ocr_service import process_ocr, process_pdf_first_page
 
 router = APIRouter(prefix="/api/v1/audit", tags=["audit"])
+
+
+class SaveScanRequest(BaseModel):
+    student_id: Optional[str] = ""
+    program: str
+    input_type: str
+    raw_input: str = ""
+    waivers: List[str] = []
+    audit_level: int
+    result_json: dict
+    result_text: str
+
+
+@router.post("/save")
+async def save_audit_result(
+    request: SaveScanRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    result = {
+        "result_json": request.result_json,
+        "result_text": request.result_text
+    }
+    
+    scan = await save_scan(
+        current_user.id, 
+        result, 
+        request.input_type, 
+        request.raw_input
+    )
+    
+    if not scan:
+        raise HTTPException(status_code=500, detail="Failed to save scan to database")
+    
+    return {
+        "scan_id": scan["id"],
+        "message": "Scan saved successfully"
+    }
+
 
 @router.post("/csv")
 async def audit_csv(

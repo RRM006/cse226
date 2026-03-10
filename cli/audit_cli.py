@@ -24,6 +24,7 @@ load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
 from cli.credentials import (
     delete_credentials,
     is_logged_in,
+    load_credentials,
     save_credentials,
     validate_nsu_email,
 )
@@ -182,55 +183,264 @@ def cmd_logout():
     print("Logged out.")
 
 
+def cmd_history():
+    """Handle history command - fetch and display scan history from API."""
+    if not is_logged_in():
+        print("❌ You must be logged in to view history.")
+        print("   Run: python cli/audit_cli.py login")
+        raise SystemExit(1)
+    
+    import httpx
+    
+    creds = load_credentials()
+    if not creds or not creds.get("access_token"):
+        print("❌ Not logged in. Run 'audit-cli login' first.")
+        raise SystemExit(1)
+    
+    api_url = os.environ.get("API_URL", "http://localhost:8000")
+    headers = {"Authorization": f"Bearer {creds['access_token']}"}
+    
+    try:
+        response = httpx.get(f"{api_url}/api/v1/history", headers=headers, timeout=30)
+        if response.status_code == 401:
+            print("❌ Session expired. Please run 'audit-cli login' again.")
+            raise SystemExit(1)
+        if response.status_code != 200:
+            print(f"❌ Error fetching history: {response.status_code}")
+            print(response.text)
+            raise SystemExit(1)
+        
+        data = response.json()
+        scans = data.get("scans", [])
+        total = data.get("total", 0)
+        
+        if total == 0:
+            print("\n📋 No scan history found.")
+            return
+        
+        print(f"\n📋 Scan History ({total} total):")
+        print("-" * 80)
+        print(f"{'Date':<20} {'Type':<10} {'Program':<8} {'Level':<6} {'Status':<15}")
+        print("-" * 80)
+        
+        for scan in scans:
+            created = scan.get("created_at", "")
+            if created:
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                    created = dt.strftime("%Y-%m-%d %H:%M")
+                except:
+                    pass
+            
+            input_type = scan.get("input_type", "csv")
+            program = scan.get("program", "-")
+            level = scan.get("audit_level", "-")
+            summary = scan.get("summary", {})
+            eligible = summary.get("eligible")
+            if eligible is True:
+                status = "Eligible"
+            elif eligible is False:
+                status = "Not Eligible"
+            else:
+                status = "-"
+            
+            print(f"{created:<20} {input_type:<10} {program:<8} {level:<6} {status:<15}")
+        
+        print("-" * 80)
+        
+    except httpx.RequestError as e:
+        print(f"❌ Network error: {e}")
+        raise SystemExit(1)
+
+
+def send_audit_to_api(result: dict, input_type: str = "csv", csv_text: str = "") -> bool:
+    """Send audit result to API to save to history."""
+    import httpx
+    
+    creds = load_credentials()
+    if not creds or not creds.get("access_token"):
+        print("⚠️ Not logged in - cannot save to history.")
+        return False
+    
+    api_url = os.environ.get("API_URL", "http://localhost:8000")
+    headers = {"Authorization": f"Bearer {creds['access_token']}"}
+    
+    result_json = result.get("result_json", {})
+    
+    payload = {
+        "student_id": result_json.get("student_id", ""),
+        "program": result_json.get("program", ""),
+        "input_type": input_type,
+        "raw_input": csv_text,
+        "waivers": result_json.get("waivers_applied", []),
+        "audit_level": result_json.get("audit_level"),
+        "result_json": result_json,
+        "result_text": result.get("result_text", ""),
+    }
+    
+    try:
+        response = httpx.post(
+            f"{api_url}/api/v1/audit/save",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        if response.status_code == 200:
+            data = response.json()
+            print(f"\n✅ Saved to history (ID: {data.get('scan_id', 'N/A')})")
+            return True
+        else:
+            print(f"\n⚠️ Failed to save to history: {response.status_code}")
+            return False
+    except httpx.RequestError as e:
+        print(f"\n⚠️ Network error - could not save to history: {e}")
+        return False
+
+
 def require_login():
     """Exit with a message if user is not logged in."""
     if not is_logged_in():
-        print("❌ You must be logged in to run audits.")
+        print("❌ You must be logged in to run audits with --remote.")
         print("   Run: python cli/audit_cli.py login")
         raise SystemExit(1)
 
 
-def cmd_l1(csv_path: str, program: str = None):
+def cmd_l1(csv_path: str, program: str = None, remote: bool = False):
     """Run Level 1 audit (credit tally)."""
-    require_login()
-    # Import Phase 1 logic
-    from src.level1_credit_tally import main as level1_main
+    import asyncio
+    from pathlib import Path
+    
+    if remote:
+        require_login()
+    
+    csv_file = Path(csv_path)
+    if not csv_file.is_absolute():
+        csv_file = Path.cwd() / csv_path
+    
+    if not csv_file.exists():
+        print(f"❌ File not found: {csv_file}")
+        raise SystemExit(1)
+    
+    with open(csv_file, 'r') as f:
+        csv_text = f.read()
+    
+    if remote:
+        async def run_remote():
+            from backend.services.audit_service import run_audit
+            result = await run_audit(
+                csv_text=csv_text,
+                program=program or "BSCSE",
+                audit_level=1,
+                waivers=[],
+                knowledge_file=""
+            )
+            print("\n" + "=" * 60)
+            print(result.get("result_text", ""))
+            print("=" * 60)
+            send_audit_to_api(result, "csv", csv_text)
+        
+        asyncio.run(run_remote())
+    else:
+        from src.level1_credit_tally import main as level1_main
+        sys.argv = ["level1_credit_tally", csv_path]
+        level1_main()
 
-    # Phase 1 expects sys.argv format
-    sys.argv = ["level1_credit_tally", csv_path]
-    level1_main()
 
-
-def cmd_l2(csv_path: str, program: str = None):
+def cmd_l2(csv_path: str, program: str = None, remote: bool = False):
     """Run Level 2 audit (CGPA calculation)."""
-    require_login()
-    # Import Phase 1 logic
-    from src.level2_cgpa_calculator import main as level2_main
+    import asyncio
+    from pathlib import Path
+    
+    if remote:
+        require_login()
+    
+    csv_file = Path(csv_path)
+    if not csv_file.is_absolute():
+        csv_file = Path.cwd() / csv_path
+    
+    if not csv_file.exists():
+        print(f"❌ File not found: {csv_file}")
+        raise SystemExit(1)
+    
+    with open(csv_file, 'r') as f:
+        csv_text = f.read()
+    
+    if remote:
+        async def run_remote():
+            from backend.services.audit_service import run_audit
+            result = await run_audit(
+                csv_text=csv_text,
+                program=program or "BSCSE",
+                audit_level=2,
+                waivers=[],
+                knowledge_file=""
+            )
+            print("\n" + "=" * 60)
+            print(result.get("result_text", ""))
+            print("=" * 60)
+            send_audit_to_api(result, "csv", csv_text)
+        
+        asyncio.run(run_remote())
+    else:
+        from src.level2_cgpa_calculator import main as level2_main
+        sys.argv = ["level2_cgpa_calculator", csv_path]
+        level2_main()
 
-    # Phase 1 expects sys.argv format
-    sys.argv = ["level2_cgpa_calculator", csv_path]
-    level2_main()
 
-
-def cmd_l3(csv_path: str, program: str = None):
+def cmd_l3(csv_path: str, program: str = None, remote: bool = False):
     """Run Level 3 audit (full graduation check)."""
-    require_login()
-    # Import Phase 1 logic
-    from src.level3_audit_engine import main as level3_main
-    from src.level3_audit_engine import parse_transcript
+    import asyncio
+    from pathlib import Path
+    
+    if remote:
+        require_login()
     
     project_root = Path(__file__).parent.parent
+    csv_file = Path(csv_path)
+    if not csv_file.is_absolute():
+        csv_file = Path.cwd() / csv_path
+    
+    if not csv_file.exists():
+        print(f"❌ File not found: {csv_file}")
+        raise SystemExit(1)
+    
+    with open(csv_file, 'r') as f:
+        csv_text = f.read()
+    
+    prog = program
     knowledge_path = None
     
-    # If the second argument happens to be a markdown file instead of a program name
-    if program and (program.endswith('.md') or '/' in program or '\\' in program):
-        knowledge_path = Path(program)
+    if prog and (prog.endswith('.md') or '/' in prog or '\\' in prog):
+        knowledge_path = Path(prog)
         if not knowledge_path.is_absolute():
-            # Treat it as relative to where the command was run
-            knowledge_path = Path.cwd() / program
+            knowledge_path = Path.cwd() / prog
     else:
-        if not program:
-            _, program, _ = parse_transcript(csv_path)
+        if not prog:
+            from src.level3_audit_engine import parse_transcript
+            _, prog, _ = parse_transcript(csv_path)
+        knowledge_path = project_root / "program_knowledge" / f"program_knowledge_{prog}.md"
+    
+    if remote:
+        async def run_remote():
+            from backend.services.audit_service import run_audit
+            result = await run_audit(
+                csv_text=csv_text,
+                program=prog or "BSCSE",
+                audit_level=3,
+                waivers=[],
+                knowledge_file=str(knowledge_path)
+            )
+            print("\n" + "=" * 60)
+            print(result.get("result_text", ""))
+            print("=" * 60)
+            send_audit_to_api(result, "csv", csv_text)
+        
+        asyncio.run(run_remote())
+    else:
+        from src.level3_audit_engine import main as level3_main
+        sys.argv = ["level3_audit_engine", csv_path, str(knowledge_path)]
+        level3_main()
         knowledge_path = project_root / "program_knowledge" / f"program_knowledge_{program}.md"
 
     # Phase 1 expects sys.argv format
@@ -403,10 +613,13 @@ Examples:
   python cli/audit_cli.py l1 data/test.csv BSCSE   # Run Level 1 audit
   python cli/audit_cli.py l2 data/test.csv BSCSE   # Run Level 2 audit
   python cli/audit_cli.py l3 data/test.csv BSCSE   # Run Level 3 audit
+  python cli/audit_cli.py l3 data/test.csv BSCSE --remote   # Run audit and save to history
   python cli/audit_cli.py ocr image.png           # OCR + audit (prompts for level)
   python cli/audit_cli.py ocr image.png BSEEE 3   # OCR + Level 3 audit
+  python cli/audit_cli.py history                 # View scan history
 
-Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu email.
+Note: All audit commands (l1, l2, l3, ocr) work offline without login.
+      Use --remote flag to save results to your account history.
         """,
     )
 
@@ -418,6 +631,9 @@ Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu em
     # Logout command
     subparsers.add_parser("logout", help="Logout and clear credentials")
 
+    # History command
+    subparsers.add_parser("history", help="View your scan history")
+
     # Level 1 command
     l1_parser = subparsers.add_parser("l1", help="Run Level 1 audit (credit tally)")
     l1_parser.add_argument("csv", help="Path to CSV file")
@@ -425,6 +641,11 @@ Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu em
         "program",
         nargs="?",
         help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
+    )
+    l1_parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Save result to your account history",
     )
 
     # Level 2 command
@@ -434,6 +655,11 @@ Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu em
         "program",
         nargs="?",
         help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
+    )
+    l2_parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Save result to your account history",
     )
 
     # Level 3 command
@@ -445,6 +671,11 @@ Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu em
         "program",
         nargs="?",
         help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
+    )
+    l3_parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Save result to your account history",
     )
 
     # OCR command
@@ -481,12 +712,14 @@ Note: All audit commands (l1, l2, l3, ocr) require login with @northsouth.edu em
         cmd_login()
     elif args.command == "logout":
         cmd_logout()
+    elif args.command == "history":
+        cmd_history()
     elif args.command == "l1":
-        cmd_l1(args.csv, args.program)
+        cmd_l1(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "l2":
-        cmd_l2(args.csv, args.program)
+        cmd_l2(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "l3":
-        cmd_l3(args.csv, args.program)
+        cmd_l3(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "ocr":
         cmd_ocr(args.file, args.program, args.level)
 

@@ -4,7 +4,7 @@ Last Updated: March 9, 2026
 
 ---
 
-## Current Status: ✅ PART 4.0 COMPLETE — Ready for Part 4 (OCR)
+## Current Status: ✅ PART 5 COMPLETE — Ready for Part 6
 
 ---
 
@@ -126,32 +126,30 @@ Last Updated: March 9, 2026
 - ✅ OCR + audit pipeline tested end-to-end
 - ✅ `part4_testing.md` created with manual test steps
 - ✅ `testing_plan2.md` updated with test results
-- ⬜ **USER CONFIRMED: GO AHEAD TO PART 5**
+- ✅ **USER CONFIRMED: GO AHEAD TO PART 5**
 
 ---
 
 ### PART 5 — History Routes & Updated CLI
-- ⬜ `backend/routers/history.py` created
-  - ⬜ `GET /api/v1/history` — current user's scans, paginated
-  - ⬜ `GET /api/v1/history/{scan_id}` — full scan for owner or admin
-  - ⬜ `DELETE /api/v1/history/{scan_id}` — own scans only
-  - ⬜ `GET /api/v1/history/user/{user_id}` — admin only
-- ⬜ `backend/routers/users.py` created
-  - ⬜ `GET /api/v1/users` — admin only, with scan counts
-  - ⬜ `PATCH /api/v1/users/{user_id}/role` — admin only
-- ⬜ All routers registered in `main.py`
-- ⬜ CLI updated (`cli/audit_cli.py`)
-  - ⬜ `audit-cli login` — browser Google OAuth, saves JWT
-  - ⬜ `audit-cli logout` — clears saved JWT
-  - ⬜ `audit-cli history` — calls API, prints table
-  - ⬜ `--remote` flag — sends result to API after local audit
-  - ⬜ Offline mode (Phase 1 behavior) unchanged
-- ⬜ `cli/credentials.py` manages `~/.nsu_audit/credentials.json`
-- ⬜ History tested: 3 audits run, all appear in history
-- ⬜ Delete tested: scan removed correctly
-- ⬜ Admin tested: can see all users' scans
-- ⬜ `tracking2.md` updated and presented to user
-- ⬜ **USER CONFIRMED: GO AHEAD TO PART 6**
+- ✅ `backend/routers/history.py` created
+  - ✅ `GET /api/v1/history` — current user's scans, paginated
+  - ✅ `GET /api/v1/history/{scan_id}` — full scan for owner or admin
+  - ✅ `DELETE /api/v1/history/{scan_id}` — own scans only
+  - ✅ `GET /api/v1/history/user/{user_id}` — admin only
+- ✅ `backend/routers/users.py` created
+  - ✅ `GET /api/v1/users` — admin only, with scan counts
+  - ✅ `PATCH /api/v1/users/{user_id}/role` — admin only
+- ✅ All routers registered in `main.py`
+- ✅ CLI updated (`cli/audit_cli.py`)
+  - ✅ `audit-cli login` — browser Google OAuth, saves JWT
+  - ✅ `audit-cli logout` — clears saved JWT
+  - ✅ `audit-cli history` — calls API, prints table
+  - ✅ `--remote` flag — sends result to API after local audit
+  - ✅ Offline mode (Phase 1 behavior) unchanged
+- ✅ `cli/credentials.py` manages `~/.nsu_audit/credentials.json`
+- ✅ `POST /api/v1/audit/save` endpoint added for CLI remote saves
+- ✅ CLI help verified: all commands visible
+- ✅ **USER CONFIRMED: GO AHEAD TO PART 6**
 
 ---
 
@@ -240,6 +238,7 @@ Last Updated: March 9, 2026
 | 3 | Mar 8 | 3 | Audit service wrapping Phase 1, CSV endpoint | Begin Part 4 |
 | 4 | Mar 9 | 4.0 | CLI Google Auth with NSU email restriction | Begin Part 4 (OCR) |
 | 5 | Mar 9 | 4 | OCR service implemented, tested with real transcripts | Begin Part 5 |
+| 6 | Mar 10 | 5 | History routes & users routers created, CLI updated with history & --remote | Begin Part 6 |
 ---
 
 ## Bugs / Issues

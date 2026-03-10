@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routers import audit
-# from routers import history, users
+from backend.routers import audit, history, users
 from fastapi import Depends
 from backend.auth import get_current_user
 
@@ -29,8 +28,8 @@ def health_check():
 
 
 app.include_router(audit.router)
-# app.include_router(history.router, prefix="/api/v1/history")
-# app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(history.router)
+app.include_router(users.router)
 
 
 @app.get("/api/v1/me")

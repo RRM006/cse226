@@ -222,3 +222,10 @@ All assumptions made during Phase 2 must be logged here immediately.
 **Reason:** Per PRD Section 8 requirements.
 **Impact:** Users with poor quality images must re-upload clearer versions.
 **Source:** PRD requirement.
+
+## Assumption #22 — CLI Remote Mode Implementation
+**Context:** CLI needs --remote flag to save audit results to API.
+**Assumption:** When --remote is used, CLI uses backend audit_service directly (not Phase 1 scripts) to get structured JSON result, then sends to /api/v1/audit/save endpoint. Without --remote, Phase 1 scripts are used for full offline compatibility.
+**Reason:** Phase 1 scripts print to stdout only; need backend service for structured API response.
+**Impact:** Slight difference in output format between offline and remote modes.
+**Source:** OpenCode assumption.
