@@ -1,0 +1,8 @@
+# Development dependencies - not needed for production
+locust
+pytest
+pytest-asyncio
+black
+flake8
+isort
+pre-commit

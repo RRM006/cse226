@@ -1,21 +1,22 @@
+# Main dependencies - required for production
 fastapi
 uvicorn[standard]
 supabase
 python-multipart
+
+# OCR - CPU only to reduce Docker image size
+torch --index-url https://download.pytorch.org/whl/cpu
 easyocr
 opencv-python-headless
 pillow
 pdf2image
 poppler-utils
+
+# Database
 asyncpg
+
+# Auth & API
 python-jose[cryptography]
 httpx
-locust
-pytest
-pytest-asyncio
-black
-flake8
-isort
-pre-commit
 pydantic-settings
 python-dotenv
