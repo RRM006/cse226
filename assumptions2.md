@@ -236,3 +236,24 @@ All assumptions made during Phase 2 must be logged here immediately.
 **Reason:** Need flexible configuration for different environments.
 **Impact:** Must set VITE_API_URL in Vercel dashboard for production deployment.
 **Source:** OpenCode assumption. Date: March 10, 2026.
+
+## Assumption #24 — Flutter Navigation Strategy
+**Context:** Flutter app needs navigation between screens.
+**Assumption:** Uses simple state-based navigation in main.dart (AuthWrapper widget) instead of go_router. GoRouter is included in pubspec.yaml but navigation is handled via setState for simplicity.
+**Reason:** Simpler for MVP, state-based auth check is straightforward.
+**Impact:** Deep linking not supported; uses standard Flutter navigation.
+**Source:** OpenCode assumption. Date: March 11, 2026.
+
+## Assumption #25 — Mobile API URL Hardcoding
+**Context:** Mobile app needs backend API URL.
+**Assumption:** API URL is hardcoded to Railway production URL in api_service.dart. Can be changed to environment variable for dev/prod flexibility.
+**Reason:** Quick MVP implementation.
+**Impact:** Need to update code for different environments.
+**Source:** OpenCode assumption. Date: March 11, 2026.
+
+## Assumption #26 — Supabase Credentials in Mobile Code
+**Context:** Mobile app needs Supabase URL and anon key.
+**Assumption:** Hardcoded in auth_service.dart for MVP. Should be in environment variables or secure storage for production.
+**Reason:** Quick MVP implementation.
+**Impact:** Security concern - keys visible in APK if not obfuscated.
+**Source:** OpenCode assumption. Date: March 11, 2026.

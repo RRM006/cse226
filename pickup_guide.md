@@ -1,124 +1,77 @@
-# Pickup Guide - NSU Audit Core Phase 2
-
-## Current State
-
-### Completed Parts
-- **PART 1**: Project Bootstrap & Supabase Setup — COMPLETE
-- **PART 2**: Supabase Auth Middleware & Database Layer — COMPLETE  
-- **PART 3**: Audit Service (Phase 1 Engine Wrapper) — COMPLETE
-- **PART 4.0**: CLI Google Auth with NSU Email Restriction — COMPLETE
-- **PART 4**: OCR Service — COMPLETE (Including deep OCR bug fixes)
-
-### In Progress
-- **PART 5**: History Routes & Updated CLI — NOT STARTED (Ready to begin)
-
-### Not Started Yet
-- None (Only Part 5 remains)
+# NSU Audit Core Phase 2 — Pickup Guide
+**Last Updated:** March 11, 2026
 
 ---
 
-## What Was Just Done (This Session)
+## Current State
 
-### Files Created/Modified
+- **Fully Complete Parts:** Part 1 (Bootstrap & Supabase), Part 2 (Supabase Auth Middleware), Part 3 (Audit Service Wrapper), Part 4 & 4.0 (OCR Service & CLI Google Auth), Part 5 (History Routes & Updated CLI), Part 6 (React Web App).
+- **In Progress:** Part 7 (Flutter Mobile App) — Code complete, awaiting Android SDK for APK build
+- **Not Started Yet:** Part 8 (CI/CD, Load Testing & Final Deployment)
 
-1. **`backend/services/ocr_service.py`** (Heavily updated to fix OCR accuracy on transcripts)
-   - **Multi-column Layout Fix:** Replaced hardcoded pixel delta checking with dynamic page midpoint detection for left/right columns to prevent horizontal merging of separate courses.
-   - **Lenient Course Code Regex:** Updated `COURSE_CODE_PATTERN` to catch typical OCR digit misreads (like 'MATI6' becoming 'MAT116', 'L'/'I' to '1', 'O' to '0', 'S' to '5').
-   - **DPI Increase:** Increased `pdf2image` conversion to `dpi=300`. This allowed EasyOCR to successfully read single-character grades (like 'B', 'D') that were previously being hidden by the 'NORTH SOUTH UNIVERSITY' watermark.
-   - **Grade/Credit Token Splitting:** EasyOCR was merging grades and noise together (e.g., `[13.0TTI D`). Implemented string splitting by space so that 'D' is cleanly isolated as a `VALID_GRADE`.
-   - **Confidence Threshold Adjustments:** Lowered the confidence exclusion threshold from `< 0.70` to `< 0.30`. The 300 DPI conversion caused baseline confidence to drop to ~0.50 on otherwise perfect reads (like 'ENG102'), so lowering the threshold prevents valid courses from disappearing.
+---
 
-### Decisions Made
+## What Was Just Done
 
-1. **Resolution vs Confidence Trade-off**: Decided to use 300 DPI for PDF extraction. While this slightly lowered the confidence scores for some EasyOCR bounding boxes, it was absolutely mandatory to recover single-letter grades (A, B, C, D) which were being destroyed by the transcript gray watermark at 200 DPI.
-2. **Lower Rejection Threshold**: Because we have a very strict regex validation pattern for course codes (`^[A-Z]{2,4}\s*[\dIOlSZ]{2,4}$`), it is safe to lower the EasyOCR confidence rejection threshold to `< 0.30`. The regex ensures we aren't picking up garbage rows.
-3. **Midpoint Column Separation**: Decided that checking if `x < page_midpoint` is infinitely more robust for preventing left/right column crosstalk than checking if items are `< 500px` apart.
+### Flutter SDK Setup:
+- Downloaded Flutter SDK to `/tmp/flutter` (3.41.4 with Dart 3.11.1)
+- Ran `flutter create mobile --org com.nsu` - project created successfully
+- Ran `flutter pub get` - dependencies resolved
 
-### Logged Assumptions
-- Assumed OCR digit misreads are deterministic enough to normalize programmatically (I->1, O->0, S->5, Z->2).
-- Assumed any isolated token falling in `VALID_GRADES` across a horizontally clustered row is the student's grade, even if merged near a noisy block.
+### Files in mobile/:
+- `mobile/pubspec.yaml` - dependencies configured
+- `mobile/lib/main.dart` - app entry with auth wrapper
+- `mobile/lib/services/auth_service.dart` - Supabase auth
+- `mobile/lib/services/api_service.dart` - API calls
+- `mobile/lib/screens/login_screen.dart` - Google OAuth login
+- `mobile/lib/screens/upload_screen.dart` - CSV/image upload
+- `mobile/lib/screens/result_screen.dart` - audit result display
+- `mobile/lib/screens/history_screen.dart` - scan history
+
+### Issue:
+- **Android SDK not installed** - Cannot build APK in current environment
+- User needs to install Android SDK and run `flutter build apk --release` locally
 
 ---
 
 ## Exact Next Step
 
-**Start PART 5 — History Routes & Updated CLI**
-
-**What to do first:**
-1. Open `tracking2.md` and review the checklist for `PART 5`.
-2. Create/Open `backend/routers/history.py` to start implementing the API endpoints (`GET /api/v1/history`, `GET /api/v1/history/{scan_id}`, etc.).
-3. Ensure the current user token validation (`Depends(get_current_user)`) is hooked up to these routes.
-
-**Immediate instruction:**
-Begin writing the `history.py` router and bind it to `main.py`. Do not revisit OCR unless explicitly asked—it is fully verified and stable.
+- **Task:** Install Android SDK, then build APK
+- **Commands to run locally:**
+  ```bash
+  cd mobile
+  flutter build apk --release
+  ```
 
 ---
 
 ## Open Items
 
-### Bugs/Issues
-- None. The missing MAT116 and hidden grades bugs are fully verified as fixed.
-
-### Questions Not Fully Answered
-- None.
-
-### Deferred Items
-- None.
+- **Bugs/Issues:** Android SDK not available in this environment
+- **Questions:** None
+- **Skipped/Deferred:** APK build - requires local environment with Android SDK
 
 ---
 
 ## Key Files Reference
 
-### Backend Core
 | File | Purpose |
 |------|---------|
-| `backend/main.py` | FastAPI application entry point |
-| `backend/config.py` | Pydantic settings configuration |
-| `backend/database.py` | Supabase database helper functions |
-| `backend/auth.py` | JWT validation and CurrentUser dependency |
+| `mobile/pubspec.yaml` | Flutter dependencies |
+| `mobile/lib/main.dart` | App entry with auth wrapper |
+| `mobile/lib/services/auth_service.dart` | Supabase auth |
+| `mobile/lib/services/api_service.dart` | API calls |
+| `mobile/lib/screens/login_screen.dart` | Login UI |
+| `mobile/lib/screens/upload_screen.dart` | Upload UI |
+| `mobile/lib/screens/result_screen.dart` | Result UI |
+| `mobile/lib/screens/history_screen.dart` | History UI |
 
-### Services
-| File | Purpose |
-|------|---------|
-| `backend/services/audit_service.py` | Wrapper for Phase 1 audit engine (L1/L2/L3) |
-| `backend/services/ocr_service.py` | OCR pipeline for transcript images/PDFs (Handles layout, regex, extraction) |
-| `backend/services/scan_service.py` | Save/retrieve audit scans from database |
+---
 
-### Routers
-| File | Purpose |
-|------|---------|
-| `backend/routers/audit.py` | `/api/v1/audit/csv` and `/api/v1/audit/ocr` endpoints |
+## Part 7 Checklist
 
-### Phase 1 Engine (Backend Core)
-| File | Purpose |
-|------|---------|
-| `backend/core/level1_credit_tally.py` | Level 1: Credit tally |
-| `backend/core/level2_cgpa_calculator.py` | Level 2: CGPA calculation |
-| `backend/core/level3_audit_engine.py` | Level 3: Full graduation audit |
-
-### CLI
-| File | Purpose |
-|------|---------|
-| `cli/audit_cli.py` | Main CLI holding logic for all commands |
-| `cli/credentials.py` | Credentials management (`~/.nsu_audit/credentials.json`) |
-
-### Executable CLI Scripts (Project Root)
-| File | Purpose |
-|------|---------|
-| `login`, `logout` | Auth management commands |
-| `l1`, `l2`, `l3`, `ocr` | Direct invocation scripts for audit levels and OCR |
-
-### Documentation
-| File | Purpose |
-|------|---------|
-| `tracking2.md` | Progress tracker with part-by-part checklist |
-| `assumptions2.md` | All assumptions made during development |
-| `testing_plan2.md` | Test cases and results |
-| `phase2_prd2.md` | Full requirements document |
-
-### Program Knowledge (Knowledge Base)
-| File | Purpose |
-|------|---------|
-| `program_knowledge/program_knowledge_BSCSE.md` | BSCSE graduation requirements |
-| `program_knowledge/program_knowledge_BSEEE.md` | BSEEE graduation requirements |
-| `program_knowledge/program_knowledge_LLB.md` | LLB graduation requirements |
+- ✅ Project created with flutter create
+- ✅ Dependencies resolved with flutter pub get
+- ✅ All screens created (login, upload, result, history)
+- ✅ All services created (auth, api)
+- ⬜ APK build requires Android SDK
