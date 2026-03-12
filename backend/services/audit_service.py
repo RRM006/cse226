@@ -1,8 +1,8 @@
 import os
 
-from backend.core.level1_credit_tally import run_level1
-from backend.core.level2_cgpa_calculator import run_level2
-from backend.core.level3_audit_engine import run_level3
+from core.level1_credit_tally import run_level1
+from core.level2_cgpa_calculator import run_level2
+from core.level3_audit_engine import run_level3
 
 
 async def run_audit(
