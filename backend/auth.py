@@ -1,8 +1,10 @@
+from dataclasses import dataclass
+
 import httpx
-from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from dataclasses import dataclass
+from jose import JWTError, jwt
+
 from backend.config import settings
 from backend.database import get_profile
 

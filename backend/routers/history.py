@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
-from backend.auth import get_current_user, require_admin, CurrentUser
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from backend.auth import CurrentUser, get_current_user, require_admin
 from backend.database import supabase
-from backend.services.scan_service import get_user_history, get_scan_by_id, delete_scan
+from backend.services.scan_service import (delete_scan, get_scan_by_id,
+                                           get_user_history)
 
 router = APIRouter(prefix="/api/v1/history", tags=["history"])
 

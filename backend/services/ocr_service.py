@@ -1,12 +1,12 @@
+import csv
 import io
 import re
-import csv
-import numpy as np
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
-import easyocr
 import cv2
+import easyocr
+import numpy as np
 
 VALID_GRADES = {'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F', 'W', 'I', 'X'}
 # Lenient pattern to catch OCR mistakes like MAT I16, CSE 2I5

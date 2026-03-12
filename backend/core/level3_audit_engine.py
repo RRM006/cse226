@@ -7,11 +7,11 @@ produces a complete deficiency report with graduation eligibility verdict.
 Usage: python src/level3_audit_engine.py <transcript.csv> <program_knowledge.md>
 """
 
-import sys
 import csv
+import math
 import os
 import re
-import math
+import sys
 from collections import defaultdict
 
 # ─────────────────────────────────────────────────────────────────────

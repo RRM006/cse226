@@ -5,9 +5,9 @@ Reads a student transcript CSV and calculates total valid earned credits.
 Usage: python src/level1_credit_tally.py <transcript.csv>
 """
 
-import sys
 import csv
 import os
+import sys
 from collections import defaultdict
 
 # ─────────────────────────────────────────────────────────────────────

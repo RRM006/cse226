@@ -5,9 +5,9 @@ Calculates weighted CGPA, handles retakes and waivers, determines academic stand
 Usage: python src/level2_cgpa_calculator.py <transcript.csv>
 """
 
-import sys
 import csv
 import os
+import sys
 from collections import defaultdict
 
 # ─────────────────────────────────────────────────────────────────────

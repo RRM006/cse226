@@ -1,4 +1,7 @@
-from backend.database import create_scan, get_scans_by_user, get_all_scans, delete_scan as db_delete_scan, supabase
+from backend.database import create_scan
+from backend.database import delete_scan as db_delete_scan
+from backend.database import get_all_scans, get_scans_by_user, supabase
+
 
 async def save_scan(user_id: str, result: dict, input_type: str, raw_input: str) -> dict:
     result_json = result.get("result_json", {})

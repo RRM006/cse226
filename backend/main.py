@@ -1,9 +1,8 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routers import audit, history, users
-from fastapi import Depends
 from backend.auth import get_current_user
+from backend.routers import audit, history, users
 
 app = FastAPI(title="NSU Audit Core API v2", version="2.0")
 

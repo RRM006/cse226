@@ -1,12 +1,13 @@
 import os
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import List, Optional
 
-from backend.auth import get_current_user, CurrentUser
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
+
+from backend.auth import CurrentUser, get_current_user
 from backend.services.audit_service import run_audit
-from backend.services.scan_service import save_scan
 from backend.services.ocr_service import process_ocr, process_pdf_first_page
+from backend.services.scan_service import save_scan
 
 router = APIRouter(prefix="/api/v1/audit", tags=["audit"])
 

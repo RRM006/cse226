@@ -257,3 +257,17 @@ All assumptions made during Phase 2 must be logged here immediately.
 **Reason:** Quick MVP implementation.
 **Impact:** Security concern - keys visible in APK if not obfuscated.
 **Source:** OpenCode assumption. Date: March 11, 2026.
+
+## Assumption #27 — Load Test JWT from Environment
+**Context:** Locust load test needs a JWT for authenticated API calls.
+**Assumption:** Test JWT is passed via TEST_JWT environment variable, not hardcoded in the locustfile. This allows refreshing the token without committing secrets.
+**Reason:** Security best practice - no secrets in source code.
+**Impact:** Load test requires TEST_JWT env var to be set before running.
+**Source:** OpenCode assumption. Date: March 12, 2026.
+
+## Assumption #28 — Pre-commit Tools Installation
+**Context:** Pre-commit hooks need the specified tools installed.
+**Assumption:** The GitHub Actions CI pipeline will install black, flake8, and isort from requirements.txt before running checks. Local pre-commit usage requires user to install these tools.
+**Reason:** CI runs in fresh environment each time.
+**Impact:** Users must run `pip install -r backend/requirements.txt` locally for pre-commit to work.
+**Source:** OpenCode assumption. Date: March 12, 2026.
