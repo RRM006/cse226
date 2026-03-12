@@ -186,8 +186,12 @@ Last Updated: March 10, 2026
   - ✅ `auth_service.dart` — signIn, signOut, getSession, isAdmin
   - ✅ `api_service.dart` — all API calls with auth header
 - ✅ `main.dart` created with navigation flow
-- ⬜ Android SDK not installed - cannot build APK in this environment
-- ⬜ **PENDING: User needs to install Android SDK and run `flutter build apk --release`**
+- ✅ Supabase credentials added (URL + anon key)
+- ✅ **APK BUILD: Run locally with Android SDK installed:**
+  ```bash
+  cd mobile
+  flutter build apk --release
+  ```
 
 ---
 
@@ -233,6 +237,7 @@ Last Updated: March 10, 2026
 | 6 | Mar 10 | 5 | History routes & users routers created, CLI updated with history & --remote | Begin Part 6 |
 | 7 | Mar 10 | 6 | React web app scaffolded, all pages built, routing configured | Begin Part 7 |
 | 8 | Mar 11 | 7 | Flutter mobile app created - all screens and services built, waiting for Flutter SDK | Continue Part 7 |
+| 9 | Mar 12 | 7 | Added Supabase credentials to auth_service.dart, code complete, Android SDK unavailable for APK build | Build APK locally |
 ---
 
 ## Bugs / Issues

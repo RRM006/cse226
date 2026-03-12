@@ -9,8 +9,9 @@ class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  static const String _supabaseUrl = 'https://your-project.supabase.co';
-  static const String _supabaseAnonKey = 'your-anon-key';
+  static const String _supabaseUrl = 'https://zxzcnpkfabiiecagczao.supabase.co';
+  static const String _supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4emNucGtmYWJpaWVjYWdjemFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDExNDMsImV4cCI6MjA4ODM3NzE0M30.0Qo8IT6gBIOF3YMlHZm4dnh47lMUW5QesD_f3EVf9tM';
 
   Future<void> initialize() async {
     await Supabase.initialize(
@@ -19,7 +20,7 @@ class AuthService {
     );
   }
 
-  Future<AuthResponse> signInWithGoogle() async {
+  Future<bool> signInWithGoogle() async {
     return await _supabase.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: 'nsu-audit-mobile://login-callback',
@@ -48,14 +49,14 @@ class AuthService {
     if (session == null) return false;
 
     final userId = session.user.id;
-    
+
     try {
       final response = await _supabase
           .from('profiles')
           .select('role')
           .eq('id', userId)
           .single();
-      
+
       return response['role'] == 'admin';
     } catch (e) {
       return false;
