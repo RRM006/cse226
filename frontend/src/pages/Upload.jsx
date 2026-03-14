@@ -1,6 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FileCheck } from 'lucide-react';
 import { uploadCSV, uploadOCR } from '../lib/api';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
+import { Input } from '../components/ui/Input';
+import { FileUpload } from '../components/ui/FileUpload';
+
+const programOptions = [
+  { value: 'BSCSE', label: 'BSc in Computer Science & Engineering' },
+  { value: 'BSEEE', label: 'BSc in Electrical & Electronic Engineering' },
+  { value: 'LLB', label: 'LLB Honors' },
+];
+
+const auditLevelOptions = [
+  { value: 1, label: 'Level 1 - Credit Tally' },
+  { value: 2, label: 'Level 2 - CGPA Calculation' },
+  { value: 3, label: 'Level 3 - Full Graduation Check' },
+];
 
 export default function Upload() {
   const navigate = useNavigate();
@@ -11,12 +31,9 @@ export default function Upload() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  function handleFileChange(e) {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setError('');
-    }
+  function handleFileChange(selectedFile) {
+    setFile(selectedFile);
+    setError('');
   }
 
   async function handleSubmit(e) {
@@ -59,163 +76,81 @@ export default function Upload() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Run Audit</h1>
-        <div style={styles.nav}>
-          <button onClick={() => navigate('/history')} style={styles.navBtn}>History</button>
-          <button onClick={() => navigate('/admin')} style={styles.navBtn}>Admin</button>
+    <DashboardLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex p-3 rounded-2xl gradient-bg mb-4">
+              <FileCheck className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-800">Run Audit</h1>
+            <p className="text-slate-500 mt-1">Upload your transcript to verify graduation eligibility</p>
+          </div>
+
+          <Card className="shadow-xl">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* File Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Upload Transcript
+                </label>
+                <FileUpload 
+                  onFileChange={handleFileChange}
+                  error={error && !file ? error : undefined}
+                />
+              </div>
+
+              {/* Program Selection */}
+              <Select
+                label="Program"
+                options={programOptions}
+                value={program}
+                onChange={(e) => setProgram(e.target.value)}
+              />
+
+              {/* Audit Level */}
+              <Select
+                label="Audit Level"
+                options={auditLevelOptions}
+                value={auditLevel}
+                onChange={(e) => setAuditLevel(parseInt(e.target.value))}
+              />
+
+              {/* Waivers */}
+              <Input
+                label="Waivers (Optional)"
+                placeholder="e.g., ENG102, MAT116"
+                value={waivers}
+                onChange={(e) => setWaivers(e.target.value)}
+                maxLength={20}
+              />
+
+              {/* Error Message */}
+              {error && file && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                isLoading={loading}
+                disabled={!file}
+              >
+                {loading ? 'Processing...' : 'Run Audit'}
+              </Button>
+            </form>
+          </Card>
         </div>
-      </div>
-
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.field}>
-          <label style={styles.label}>Upload File (CSV or Image)</label>
-          <input 
-            type="file" 
-            accept=".csv,.png,.jpg,.jpeg" 
-            onChange={handleFileChange}
-            style={styles.fileInput}
-          />
-          {file && <p style={styles.fileName}>{file.name}</p>}
-        </div>
-
-        <div style={styles.field}>
-          <label style={styles.label}>Program</label>
-          <select 
-            value={program} 
-            onChange={(e) => setProgram(e.target.value)}
-            style={styles.select}
-          >
-            <option value="BSCSE">BSc in Computer Science & Engineering</option>
-            <option value="BSEEE">BSc in Electrical & Electronic Engineering</option>
-            <option value="LLB">LLB Honors</option>
-          </select>
-        </div>
-
-        <div style={styles.field}>
-          <label style={styles.label}>Audit Level</label>
-          <select 
-            value={auditLevel} 
-            onChange={(e) => setAuditLevel(parseInt(e.target.value))}
-            style={styles.select}
-          >
-            <option value={1}>Level 1 - Credit Tally</option>
-            <option value={2}>Level 2 - CGPA Calculation</option>
-            <option value={3}>Level 3 - Full Graduation Check</option>
-          </select>
-        </div>
-
-        <div style={styles.field}>
-          <label style={styles.label}>Waivers (comma-separated, optional)</label>
-          <input 
-            type="text" 
-            value={waivers}
-            onChange={(e) => setWaivers(e.target.value)}
-            placeholder="e.g., ENG102, MAT116"
-            style={styles.input}
-          />
-        </div>
-
-        {error && <p style={styles.error}>{error}</p>}
-
-        <button 
-          type="submit" 
-          disabled={loading || !file}
-          style={{...styles.button, opacity: loading || !file ? 0.6 : 1}}
-        >
-          {loading ? 'Processing...' : 'Run Audit'}
-        </button>
-      </form>
-    </div>
+      </motion.div>
+    </DashboardLayout>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    fontFamily: 'system-ui, sans-serif',
-    padding: '1rem'
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem'
-  },
-  title: {
-    margin: 0,
-    color: '#1a1a1a'
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.5rem'
-  },
-  navBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#666',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  form: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    maxWidth: '500px',
-    margin: '0 auto'
-  },
-  field: {
-    marginBottom: '1.5rem'
-  },
-  label: {
-    display: 'block',
-    marginBottom: '0.5rem',
-    fontWeight: '500',
-    color: '#333'
-  },
-  fileInput: {
-    width: '100%',
-    padding: '8px'
-  },
-  fileName: {
-    margin: '0.5rem 0 0',
-    color: '#666',
-    fontSize: '0.875rem'
-  },
-  select: {
-    width: '100%',
-    padding: '10px',
-    borderRadius: '4px',
-    border: '1px solid #ddd',
-    fontSize: '1rem'
-  },
-  input: {
-    width: '100%',
-    padding: '10px',
-    borderRadius: '4px',
-    border: '1px solid #ddd',
-    fontSize: '1rem'
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#4285f4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    fontWeight: '500'
-  },
-  error: {
-    color: '#d32f2f',
-    marginBottom: '1rem',
-    padding: '8px',
-    backgroundColor: '#ffebee',
-    borderRadius: '4px'
-  }
-};

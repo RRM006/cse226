@@ -1,0 +1,22 @@
+#!/bin/bash
+# Run both backend and frontend for local development
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Detect Python executable (use venv if available)
+if [ -d "$SCRIPT_DIR/.venv" ]; then
+    PYTHON="$SCRIPT_DIR/.venv/bin/python"
+    # npm is usually system-wide, prefer system npm over venv npm
+    if [ -x "$SCRIPT_DIR/.venv/bin/npm" ]; then
+        NPM="$SCRIPT_DIR/.venv/bin/npm"
+    else
+        NPM="npm"
+    fi
+else
+    PYTHON="python"
+    NPM="npm"
+fi
+
+# Run the CLI web command
+$PYTHON "$SCRIPT_DIR/cli/audit_cli.py" web "$NPM"

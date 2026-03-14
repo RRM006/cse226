@@ -62,3 +62,8 @@ frontend/.env
 easyocr/
 ~/.EasyOCR/
 model_weights/
+
+# =========================
+# Documentation
+# =========================
+pickup_guide.md

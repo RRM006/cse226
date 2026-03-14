@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FileText, Trash2, AlertCircle, ClipboardList } from 'lucide-react';
 import { getHistory, deleteScan } from '../lib/api';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { formatDate, getProgramLabel, getAuditLevelLabel } from '../lib/utils';
 
 export default function History() {
   const navigate = useNavigate();
@@ -40,187 +46,136 @@ export default function History() {
     }
   }
 
-  function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
   if (loading) {
     return (
-      <div style={styles.container}>
-        <p>Loading history...</p>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-500">Loading history...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Scan History</h1>
-        <div style={styles.nav}>
-          <button onClick={() => navigate('/upload')} style={styles.navBtn}>Upload</button>
-          <button onClick={() => navigate('/admin')} style={styles.navBtn}>Admin</button>
-        </div>
-      </div>
+    <DashboardLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Scan History</h1>
+              <p className="text-slate-500 mt-1">View your previous audit results</p>
+            </div>
+          </div>
 
-      {error && <p style={styles.error}>{error}</p>}
+          {error && (
+            <Card className="mb-6 bg-red-50 border-red-200">
+              <div className="flex items-center gap-3 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <p>{error}</p>
+              </div>
+            </Card>
+          )}
 
-      {scans.length === 0 ? (
-        <div style={styles.empty}>
-          <p>No scans found.</p>
-          <button onClick={() => navigate('/upload')} style={styles.button}>
-            Run Your First Audit
-          </button>
+          {scans.length === 0 ? (
+            <Card className="text-center py-12">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 rounded-full bg-slate-100">
+                  <ClipboardList className="w-8 h-8 text-slate-400" />
+                </div>
+              </div>
+              <h3 className="text-lg font-medium text-slate-700 mb-2">No audit history yet</h3>
+              <p className="text-slate-500 mb-6">Run your first audit to see results here</p>
+              <Button onClick={() => navigate('/upload')}>
+                Run Your First Audit
+              </Button>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Date</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Type</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Program</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Level</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Status</th>
+                      <th className="text-right px-6 py-4 text-sm font-semibold text-slate-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {scans.map((scan) => (
+                      <tr 
+                        key={scan.scan_id} 
+                        className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        onClick={() => navigate(`/result/${scan.scan_id}`)}
+                      >
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {formatDate(scan.created_at)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                            {scan.input_type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {getProgramLabel(scan.program)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          Level {scan.audit_level}
+                        </td>
+                        <td className="px-6 py-4">
+                          {scan.summary?.eligible === true && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Eligible
+                            </span>
+                          )}
+                          {scan.summary?.eligible === false && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                              Not Eligible
+                            </span>
+                          )}
+                          {scan.summary?.eligible === undefined && (
+                            <span className="text-slate-400 text-sm">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/result/${scan.scan_id}`)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(scan.scan_id)}
+                              disabled={deleteId === scan.scan_id}
+                              className="text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
         </div>
-      ) : (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Date</th>
-                <th style={styles.th}>Type</th>
-                <th style={styles.th}>Program</th>
-                <th style={styles.th}>Level</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scans.map((scan) => (
-                <tr key={scan.scan_id} style={styles.tr}>
-                  <td style={styles.td}>{formatDate(scan.created_at)}</td>
-                  <td style={styles.td}>{scan.input_type}</td>
-                  <td style={styles.td}>{scan.program}</td>
-                  <td style={styles.td}>{scan.audit_level}</td>
-                  <td style={styles.td}>
-                    {scan.summary?.eligible === true && <span style={styles.eligible}>Eligible</span>}
-                    {scan.summary?.eligible === false && <span style={styles.notEligible}>Not Eligible</span>}
-                    {scan.summary?.eligible === undefined && <span>-</span>}
-                  </td>
-                  <td style={styles.td}>
-                    <button 
-                      onClick={() => navigate(`/result/${scan.scan_id}`)}
-                      style={styles.viewBtn}
-                    >
-                      View
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(scan.scan_id)}
-                      disabled={deleteId === scan.scan_id}
-                      style={styles.deleteBtn}
-                    >
-                      {deleteId === scan.scan_id ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+      </motion.div>
+    </DashboardLayout>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    fontFamily: 'system-ui, sans-serif',
-    padding: '1rem'
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem'
-  },
-  title: {
-    margin: 0,
-    color: '#1a1a1a'
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.5rem'
-  },
-  navBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#666',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  error: {
-    color: '#d32f2f',
-    marginBottom: '1rem',
-    padding: '8px',
-    backgroundColor: '#ffebee',
-    borderRadius: '4px'
-  },
-  empty: {
-    textAlign: 'center',
-    padding: '3rem',
-    backgroundColor: 'white',
-    borderRadius: '8px'
-  },
-  tableContainer: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse'
-  },
-  th: {
-    textAlign: 'left',
-    padding: '12px',
-    backgroundColor: '#f5f5f5',
-    fontWeight: '600',
-    borderBottom: '1px solid #ddd'
-  },
-  tr: {
-    borderBottom: '1px solid #eee'
-  },
-  td: {
-    padding: '12px'
-  },
-  eligible: {
-    color: 'green',
-    fontWeight: '500'
-  },
-  notEligible: {
-    color: 'red',
-    fontWeight: '500'
-  },
-  viewBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#4285f4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    marginRight: '8px'
-  },
-  deleteBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#d32f2f',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  button: {
-    padding: '12px 24px',
-    backgroundColor: '#4285f4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    fontWeight: '500'
-  }
-};

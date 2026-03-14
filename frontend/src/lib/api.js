@@ -18,6 +18,10 @@ export async function getCurrentUser() {
   const response = await fetch(`${API_URL}/api/v1/me`, {
     headers
   });
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to get user');
   }
@@ -43,6 +47,10 @@ export async function uploadCSV(file, program, auditLevel, waivers = '', knowled
     body: formData
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to upload CSV');
@@ -67,6 +75,10 @@ export async function uploadOCR(file, program, auditLevel, waivers = '') {
     body: formData
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to process OCR');
@@ -81,6 +93,10 @@ export async function getHistory(limit = 20, offset = 0) {
     headers
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to get history');
   }
@@ -94,6 +110,10 @@ export async function getScanById(scanId) {
     headers
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to get scan');
   }
@@ -108,6 +128,10 @@ export async function deleteScan(scanId) {
     headers
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to delete scan');
   }
@@ -121,6 +145,10 @@ export async function getAllUsers() {
     headers
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to get users');
   }
@@ -139,6 +167,10 @@ export async function updateUserRole(userId, role) {
     body: JSON.stringify({ role })
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to update role');
   }
@@ -152,6 +184,10 @@ export async function getUserHistory(userId, limit = 20, offset = 0) {
     headers
   });
 
+  if (response.status === 403) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Only @northsouth.edu accounts are allowed');
+  }
   if (!response.ok) {
     throw new Error('Failed to get user history');
   }

@@ -602,6 +602,59 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None)
         print(f"   Missing Courses: {', '.join(audit_result.get('missing_courses', []))}")
 
 
+def cmd_web(npm_cmd="npm"):
+    """Run both backend and frontend for local development."""
+    import subprocess
+    import sys
+    import os
+    from pathlib import Path
+
+    project_root = Path(__file__).parent.parent
+    backend_dir = project_root / "backend"
+    frontend_dir = project_root / "frontend"
+
+    print("=" * 60)
+    print("Starting NSU Audit Core - Local Development")
+    print("=" * 60)
+    print("\nBackend: http://localhost:8000")
+    print("Frontend: http://localhost:5173")
+    print("\nPress Ctrl+C to stop both servers")
+    print("=" * 60)
+
+    backend_process = None
+    frontend_process = None
+
+    try:
+        print("\n[1/2] Starting backend (FastAPI)...")
+        backend_process = subprocess.Popen(
+            [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--port", "8000"],
+            cwd=str(backend_dir),
+            env={**os.environ, "PYTHONPATH": str(backend_dir)},
+        )
+
+        print("[2/2] Starting frontend (Vite)...")
+        frontend_process = subprocess.Popen(
+            [npm_cmd, "run", "dev"],
+            cwd=str(frontend_dir),
+        )
+
+        print("\n✅ Both servers are running!")
+        print("   Backend: http://localhost:8000")
+        print("   Frontend: http://localhost:5173")
+
+        backend_process.wait()
+    except KeyboardInterrupt:
+        print("\n\nShutting down servers...")
+    finally:
+        if backend_process:
+            backend_process.terminate()
+            backend_process.wait()
+        if frontend_process:
+            frontend_process.terminate()
+            frontend_process.wait()
+        print("✅ Servers stopped.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="NSU Audit Core CLI",
@@ -610,6 +663,7 @@ def main():
 Examples:
   python cli/audit_cli.py login              # Login with NSU Google account
   python cli/audit_cli.py logout             # Logout
+  python cli/audit_cli.py web                # Run both backend and frontend locally
   python cli/audit_cli.py l1 data/test.csv BSCSE   # Run Level 1 audit
   python cli/audit_cli.py l2 data/test.csv BSCSE   # Run Level 2 audit
   python cli/audit_cli.py l3 data/test.csv BSCSE   # Run Level 3 audit
@@ -702,6 +756,15 @@ Note: All audit commands (l1, l2, l3, ocr) work offline without login.
         help="Audit level (1, 2, or 3) - will prompt if not provided",
     )
 
+    # Web command
+    web_parser = subparsers.add_parser("web", help="Run both backend and frontend for local development")
+    web_parser.add_argument(
+        "npm",
+        nargs="?",
+        default="npm",
+        help="Path to npm executable (default: npm)",
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -722,6 +785,8 @@ Note: All audit commands (l1, l2, l3, ocr) work offline without login.
         cmd_l3(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "ocr":
         cmd_ocr(args.file, args.program, args.level)
+    elif args.command == "web":
+        cmd_web(args.npm)
 
 
 if __name__ == "__main__":

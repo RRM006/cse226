@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Settings, Users, Eye, Shield, X, ClipboardList } from 'lucide-react';
 import { getAllUsers, updateUserRole, getCurrentUser, getUserHistory } from '../lib/api';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { formatDate, getProgramLabel } from '../lib/utils';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -10,6 +16,7 @@ export default function AdminPanel() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userHistory, setUserHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -52,12 +59,15 @@ export default function AdminPanel() {
   }
 
   async function handleViewHistory(userId) {
+    setSelectedUser(userId);
+    setLoadingHistory(true);
     try {
       const data = await getUserHistory(userId, 20, 0);
       setUserHistory(data.scans || []);
-      setSelectedUser(userId);
     } catch (err) {
       alert('Failed to load history: ' + err.message);
+    } finally {
+      setLoadingHistory(false);
     }
   }
 
@@ -68,9 +78,14 @@ export default function AdminPanel() {
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <p>Loading...</p>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-500">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -79,227 +94,193 @@ export default function AdminPanel() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Admin Panel</h1>
-        <div style={styles.nav}>
-          <button onClick={() => navigate('/upload')} style={styles.navBtn}>Upload</button>
-          <button onClick={() => navigate('/history')} style={styles.navBtn}>History</button>
-        </div>
-      </div>
+    <DashboardLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg gradient-bg">
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-800">Admin Panel</h1>
+                <p className="text-slate-500">Manage users and view system statistics</p>
+              </div>
+            </div>
+          </div>
 
-      {error && <p style={styles.error}>{error}</p>}
+          {error && (
+            <Card className="mb-6 bg-red-50 border-red-200">
+              <p className="text-red-600">{error}</p>
+            </Card>
+          )}
 
-      <div style={styles.tableContainer}>
-        <h2 style={styles.subtitle}>All Users</h2>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Email</th>
-              <th style={styles.th}>Role</th>
-              <th style={styles.th}>Scans</th>
-              <th style={styles.th}>Created</th>
-              <th style={styles.th}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id} style={styles.tr}>
-                <td style={styles.td}>{user.email}</td>
-                <td style={styles.td}>
-                  <span style={user.role === 'admin' ? styles.adminBadge : styles.studentBadge}>
-                    {user.role}
-                  </span>
-                </td>
-                <td style={styles.td}>{user.scan_count}</td>
-                <td style={styles.td}>{user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}</td>
-                <td style={styles.td}>
-                  <button 
-                    onClick={() => handleViewHistory(user.id)}
-                    style={styles.viewBtn}
-                  >
-                    View History
-                  </button>
-                  <button 
-                    onClick={() => handleRoleChange(user.id, user.role === 'admin' ? 'student' : 'admin')}
-                    style={styles.roleBtn}
-                  >
-                    Make {user.role === 'admin' ? 'Student' : 'Admin'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {selectedUser && (
-        <div style={styles.modal}>
-          <div style={styles.modalContent}>
-            <h2 style={styles.modalTitle}>User Scan History</h2>
-            {userHistory.length === 0 ? (
-              <p>No scans found.</p>
-            ) : (
-              <table style={styles.table}>
+          {/* Users Table */}
+          <Card className="overflow-hidden p-0 shadow-xl">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                All Users ({users.length})
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
                 <thead>
-                  <tr>
-                    <th style={styles.th}>Date</th>
-                    <th style={styles.th}>Program</th>
-                    <th style={styles.th}>Level</th>
-                    <th style={styles.th}>Eligible</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">User</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Role</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Scans</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Joined</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-slate-600">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {userHistory.map((scan) => (
-                    <tr key={scan.scan_id} style={styles.tr}>
-                      <td style={styles.td}>
-                        {scan.created_at ? new Date(scan.created_at).toLocaleDateString() : '-'}
+                <tbody className="divide-y divide-slate-100">
+                  {users.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary-700">
+                              {user.email?.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-sm text-slate-700 truncate max-w-[200px]">
+                            {user.email}
+                          </span>
+                        </div>
                       </td>
-                      <td style={styles.td}>{scan.program}</td>
-                      <td style={styles.td}>{scan.audit_level}</td>
-                      <td style={styles.td}>
-                        {scan.summary?.eligible === true && 'Yes'}
-                        {scan.summary?.eligible === false && 'No'}
-                        {scan.summary?.eligible === undefined && '-'}
+                      <td className="px-6 py-4">
+                        {user.role === 'admin' ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                            Student
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {user.scan_count || 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewHistory(user.id)}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRoleChange(user.id, user.role === 'admin' ? 'student' : 'admin')}
+                            className={user.role === 'admin' ? 'text-amber-600 hover:bg-amber-50' : 'text-blue-600 hover:bg-blue-50'}
+                          >
+                            {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-            <button onClick={closeHistoryModal} style={styles.closeBtn}>
-              Close
-            </button>
-          </div>
+            </div>
+          </Card>
         </div>
-      )}
-    </div>
+
+        {/* User History Modal */}
+        <AnimatePresence>
+          {selectedUser && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+              onClick={closeHistoryModal}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5" />
+                    User Scan History
+                  </h3>
+                  <button
+                    onClick={closeHistoryModal}
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-500" />
+                  </button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                  {loadingHistory ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-6 h-6 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : userHistory.length === 0 ? (
+                    <p className="text-center text-slate-500 py-8">No scans found</p>
+                  ) : (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-sm font-semibold text-slate-600 border-b border-slate-200">
+                          <th className="pb-3">Date</th>
+                          <th className="pb-3">Program</th>
+                          <th className="pb-3">Level</th>
+                          <th className="pb-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {userHistory.map((scan) => (
+                          <tr key={scan.scan_id}>
+                            <td className="py-3 text-sm text-slate-600">
+                              {formatDate(scan.created_at)}
+                            </td>
+                            <td className="py-3 text-sm text-slate-700">
+                              {getProgramLabel(scan.program)}
+                            </td>
+                            <td className="py-3 text-sm text-slate-600">
+                              Level {scan.audit_level}
+                            </td>
+                            <td className="py-3">
+                              {scan.summary?.eligible === true && (
+                                <span className="text-green-600 text-sm font-medium">Eligible</span>
+                              )}
+                              {scan.summary?.eligible === false && (
+                                <span className="text-red-600 text-sm font-medium">Not Eligible</span>
+                              )}
+                              {scan.summary?.eligible === undefined && (
+                                <span className="text-slate-400 text-sm">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </DashboardLayout>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    fontFamily: 'system-ui, sans-serif',
-    padding: '1rem'
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem'
-  },
-  title: {
-    margin: 0,
-    color: '#1a1a1a'
-  },
-  subtitle: {
-    margin: '0 0 1rem',
-    color: '#1a1a1a'
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.5rem'
-  },
-  navBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#666',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  error: {
-    color: '#d32f2f',
-    marginBottom: '1rem'
-  },
-  tableContainer: {
-    backgroundColor: 'white',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse'
-  },
-  th: {
-    textAlign: 'left',
-    padding: '12px',
-    backgroundColor: '#f5f5f5',
-    fontWeight: '600',
-    borderBottom: '1px solid #ddd'
-  },
-  tr: {
-    borderBottom: '1px solid #eee'
-  },
-  td: {
-    padding: '12px'
-  },
-  adminBadge: {
-    padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1565c0',
-    borderRadius: '4px',
-    fontSize: '0.875rem',
-    fontWeight: '500'
-  },
-  studentBadge: {
-    padding: '4px 8px',
-    backgroundColor: '#f5f5f5',
-    color: '#666',
-    borderRadius: '4px',
-    fontSize: '0.875rem',
-    fontWeight: '500'
-  },
-  viewBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#4285f4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    marginRight: '8px'
-  },
-  roleBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#ff9800',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  modal: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    maxWidth: '600px',
-    width: '90%',
-    maxHeight: '80vh',
-    overflow: 'auto'
-  },
-  modalTitle: {
-    margin: '0 0 1rem'
-  },
-  closeBtn: {
-    marginTop: '1rem',
-    padding: '8px 16px',
-    backgroundColor: '#666',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  }
-};

@@ -62,6 +62,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
                 detail="Invalid token payload",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        
+        if not email or not email.strip().lower().endswith("@northsouth.edu"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only @northsouth.edu accounts are allowed",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     except JWTError:
         raise HTTPException(

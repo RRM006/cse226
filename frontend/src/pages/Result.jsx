@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { CheckCircle, XCircle, AlertTriangle, FileText, ArrowLeft } from 'lucide-react';
 import { getScanById } from '../lib/api';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { formatDate, getProgramLabel, getAuditLevelLabel } from '../lib/utils';
 
 export default function Result() {
   const { scanId } = useParams();
@@ -29,229 +35,161 @@ export default function Result() {
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <p>Loading result...</p>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-500">Loading result...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.container}>
-        <p style={styles.error}>{error}</p>
-        <button onClick={() => navigate('/upload')} style={styles.button}>
-          Back to Upload
-        </button>
-      </div>
+      <DashboardLayout>
+        <Card className="max-w-2xl mx-auto text-center py-12">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 rounded-full bg-red-100">
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+          </div>
+          <h3 className="text-lg font-medium text-slate-700 mb-2">Error Loading Result</h3>
+          <p className="text-slate-500 mb-6">{error}</p>
+          <Button onClick={() => navigate('/upload')}>
+            Back to Upload
+          </Button>
+        </Card>
+      </DashboardLayout>
     );
   }
 
   if (!result) {
     return (
-      <div style={styles.container}>
-        <p>No result found</p>
-        <button onClick={() => navigate('/upload')} style={styles.button}>
-          Back to Upload
-        </button>
-      </div>
+      <DashboardLayout>
+        <Card className="max-w-2xl mx-auto text-center py-12">
+          <h3 className="text-lg font-medium text-slate-700 mb-2">No Result Found</h3>
+          <p className="text-slate-500 mb-6">The requested result could not be found</p>
+          <Button onClick={() => navigate('/upload')}>
+            Back to Upload
+          </Button>
+        </Card>
+      </DashboardLayout>
     );
   }
 
   const summary = result.summary || {};
-  const resultJson = result.result_json || {};
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Audit Result</h1>
-        <div style={styles.nav}>
-          <button onClick={() => navigate('/history')} style={styles.navBtn}>History</button>
-          <button onClick={() => navigate('/admin')} style={styles.navBtn}>Admin</button>
-        </div>
-      </div>
+    <DashboardLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/history')}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to History
+          </Button>
 
-      <div style={styles.card}>
-        <div style={styles.summaryCard}>
-          <h2 style={styles.cardTitle}>Summary</h2>
-          <div style={styles.grid}>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>Student ID</span>
-              <span style={styles.value}>{result.student_id || '-'}</span>
-            </div>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>Program</span>
-              <span style={styles.value}>{result.program}</span>
-            </div>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>Audit Level</span>
-              <span style={styles.value}>{result.audit_level}</span>
-            </div>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>Total Credits</span>
-              <span style={styles.value}>{summary.total_credits ?? '-'}</span>
-            </div>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>CGPA</span>
-              <span style={styles.value}>{summary.cgpa ?? '-'}</span>
-            </div>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>Standing</span>
-              <span style={styles.value}>{summary.standing ?? '-'}</span>
-            </div>
-            <div style={styles.gridItem}>
-              <span style={styles.label}>Eligible</span>
-              <span style={{
-                ...styles.value,
-                color: summary.eligible === true ? 'green' : summary.eligible === false ? 'red' : 'inherit'
-              }}>
-                {summary.eligible === true ? 'Yes' : summary.eligible === false ? 'No' : '-'}
-              </span>
-            </div>
-            {result.ocr_confidence && (
-              <div style={styles.gridItem}>
-                <span style={styles.label}>OCR Confidence</span>
-                <span style={styles.value}>{(result.ocr_confidence * 100).toFixed(1)}%</span>
+          {/* Status Banner */}
+          {summary.eligible === true && (
+            <Card className="mb-6 bg-green-50 border-green-200">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-green-100">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-green-800">Congratulations!</h2>
+                  <p className="text-green-700">You meet all graduation requirements</p>
+                </div>
               </div>
-            )}
-          </div>
-
-          {summary.missing_courses && summary.missing_courses.length > 0 && (
-            <div style={styles.missingSection}>
-              <h3 style={styles.missingTitle}>Missing Courses</h3>
-              <ul style={styles.missingList}>
-                {summary.missing_courses.map((course, idx) => (
-                  <li key={idx}>{course}</li>
-                ))}
-              </ul>
-            </div>
+            </Card>
+          )}
+          
+          {summary.eligible === false && (
+            <Card className="mb-6 bg-red-50 border-red-200">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-red-100">
+                  <XCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-red-800">Not Eligible</h2>
+                  <p className="text-red-700">You have not yet met all graduation requirements</p>
+                </div>
+              </div>
+            </Card>
           )}
 
-          <p style={styles.savedNote}>This result has been saved to your history.</p>
-        </div>
+          {/* Summary Card */}
+          <Card className="mb-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Audit Summary</h3>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-sm text-slate-500 mb-1">Program</p>
+                <p className="font-semibold text-slate-800">{getProgramLabel(result.program)}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-sm text-slate-500 mb-1">Level</p>
+                <p className="font-semibold text-slate-800">{getAuditLevelLabel(result.audit_level)}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-sm text-slate-500 mb-1">Total Credits</p>
+                <p className="font-semibold text-slate-800">{summary.total_credits ?? '-'}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-sm text-slate-500 mb-1">CGPA</p>
+                <p className="font-semibold text-slate-800">{summary.cgpa ?? '-'}</p>
+              </div>
+            </div>
 
-        <div style={styles.resultSection}>
-          <h2 style={styles.cardTitle}>Full Result</h2>
-          <pre style={styles.pre}>
-            {result.result_text || 'No detailed result available'}
-          </pre>
-        </div>
+            {summary.missing_courses > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-center gap-2 text-amber-700 mb-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="font-medium">{summary.missing_courses} Missing Course{summary.missing_courses !== 1 ? 's' : ''}</span>
+                </div>
+                <p className="text-sm text-amber-600">You need to complete additional courses to become eligible</p>
+              </div>
+            )}
 
-        <button onClick={() => navigate('/upload')} style={styles.button}>
-          Run New Audit
-        </button>
-      </div>
-    </div>
+            <p className="text-sm text-slate-500 mt-4">
+              Scan ID: {result.scan_id} • {formatDate(result.created_at)}
+            </p>
+          </Card>
+
+          {/* Full Result Card */}
+          <Card className="mb-6 shadow-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5 text-slate-600" />
+              <h3 className="text-lg font-semibold text-slate-800">Detailed Result</h3>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 max-h-[400px] overflow-auto">
+              <pre className="text-sm text-slate-600 whitespace-pre-wrap font-mono">
+                {result.result_text || 'No detailed result available'}
+              </pre>
+            </div>
+          </Card>
+
+          {/* Actions */}
+          <div className="flex justify-center gap-4">
+            <Button onClick={() => navigate('/history')}>
+              View History
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/upload')}>
+              Run New Audit
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </DashboardLayout>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    fontFamily: 'system-ui, sans-serif',
-    padding: '1rem'
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem'
-  },
-  title: {
-    margin: 0,
-    color: '#1a1a1a'
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.5rem'
-  },
-  navBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#666',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    maxWidth: '800px',
-    margin: '0 auto'
-  },
-  summaryCard: {
-    marginBottom: '2rem'
-  },
-  cardTitle: {
-    margin: '0 0 1rem',
-    color: '#1a1a1a',
-    fontSize: '1.25rem'
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '1rem'
-  },
-  gridItem: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  label: {
-    fontSize: '0.875rem',
-    color: '#666',
-    marginBottom: '0.25rem'
-  },
-  value: {
-    fontSize: '1.125rem',
-    fontWeight: '500',
-    color: '#1a1a1a'
-  },
-  missingSection: {
-    marginTop: '1.5rem',
-    padding: '1rem',
-    backgroundColor: '#fff3e0',
-    borderRadius: '4px'
-  },
-  missingTitle: {
-    margin: '0 0 0.5rem',
-    color: '#e65100'
-  },
-  missingList: {
-    margin: 0,
-    paddingLeft: '1.5rem'
-  },
-  savedNote: {
-    marginTop: '1rem',
-    color: '#4caf50',
-    fontSize: '0.875rem'
-  },
-  resultSection: {
-    marginBottom: '2rem'
-  },
-  pre: {
-    backgroundColor: '#f5f5f5',
-    padding: '1rem',
-    borderRadius: '4px',
-    overflow: 'auto',
-    fontSize: '0.875rem',
-    maxHeight: '400px',
-    whiteSpace: 'pre-wrap',
-    fontFamily: 'monospace'
-  },
-  button: {
-    padding: '12px 24px',
-    backgroundColor: '#4285f4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    fontWeight: '500'
-  },
-  error: {
-    color: '#d32f2f',
-    marginBottom: '1rem'
-  }
-};
