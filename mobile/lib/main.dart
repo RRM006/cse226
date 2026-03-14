@@ -9,7 +9,11 @@ import 'services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AuthService().initialize();
+  try {
+    await AuthService().initialize();
+  } catch (e) {
+    debugPrint('AuthService initialization error: $e');
+  }
   runApp(const NSUAuditApp());
 }
 
