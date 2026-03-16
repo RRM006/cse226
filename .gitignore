@@ -67,4 +67,5 @@ model_weights/
 # =========================
 # Documentation
 # =========================
-pickup_guide.mdmcp/credentials.json
+pickup_guide.md
+mcp/credentials.json
