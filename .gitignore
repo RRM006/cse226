@@ -13,6 +13,7 @@ dist/
 # Virtual Environment
 # =========================
 venv/
+mcp/venv/
 .env/
 
 # =========================
@@ -66,4 +67,4 @@ model_weights/
 # =========================
 # Documentation
 # =========================
-pickup_guide.md
+pickup_guide.mdmcp/credentials.json
