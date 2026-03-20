@@ -1,5 +1,10 @@
 #!/bin/bash
-# Run both backend and frontend for local development
+# Run backend, frontend, and optionally MCP for local development
+#
+# Usage:
+#   ./web              - Run backend + frontend only
+#   ./web local        - Run backend + frontend + MCP (offline mode)
+#   ./web local remote - Run backend + frontend + MCP (remote mode)
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,5 +23,17 @@ else
     NPM="npm"
 fi
 
+# Parse arguments
+MCP_FLAG=""
+MCP_MODE="offline"
+
+if [ "$1" = "local" ]; then
+    MCP_FLAG="--mcp"
+    if [ "$2" = "remote" ]; then
+        MCP_MODE="remote"
+    fi
+    MCP_FLAG="$MCP_FLAG --mcp-mode $MCP_MODE"
+fi
+
 # Run the CLI web command
-$PYTHON "$SCRIPT_DIR/cli/audit_cli.py" web "$NPM"
+$PYTHON "$SCRIPT_DIR/cli/audit_cli.py" web "$NPM" $MCP_FLAG

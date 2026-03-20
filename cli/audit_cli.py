@@ -3,6 +3,7 @@
 NSU Audit Core CLI - Phase 2
 Google OAuth login with NSU email restriction.
 """
+
 import argparse
 import base64
 import json
@@ -13,14 +14,30 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+import httpx
 from dotenv import load_dotenv
 
-# Set up path before imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "archive"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-
+from cli.ui import (
+    console,
+    print_title,
+    print_success,
+    print_error,
+    print_warning,
+    print_info,
+    print_menu_item,
+    print_header,
+    print_divider,
+    prompt_input,
+    prompt_yes_no,
+    prompt_choice,
+    print_table,
+    clear_screen,
+    RICH_AVAILABLE,
+    install_rich,
+)
 from cli.credentials import (
     delete_credentials,
     is_logged_in,
@@ -29,11 +46,19 @@ from cli.credentials import (
     validate_nsu_email,
 )
 
+if not RICH_AVAILABLE:
+    install_rich()
+
+load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
+
+API_URL = os.environ.get("API_URL", "http://localhost:8000")
+
 
 def build_supabase_oauth_url() -> str:
     """Build the Supabase Google OAuth URL."""
     supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    os.environ.get("SUPABASE_ANON_KEY", "")  # Required for config, not used in URL
+    if not supabase_url:
+        return ""
     redirect = "http://localhost:54321/callback"
     return (
         f"{supabase_url}/auth/v1/authorize"
@@ -62,23 +87,18 @@ class CallbackHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
-        
+
         if self.path == '/favicon.ico':
             self.send_response(404)
             self.end_headers()
             return
 
-        # If there are params suggesting completion
         if "access_token" in params or "code" in params or "error" in params:
-            CallbackHandler.token_result["access_token"] = params.get(
-                "access_token", [None]
-            )[0]
-            CallbackHandler.token_result["refresh_token"] = params.get(
-                "refresh_token", [None]
-            )[0]
+            CallbackHandler.token_result["access_token"] = params.get("access_token", [None])[0]
+            CallbackHandler.token_result["refresh_token"] = params.get("refresh_token", [None])[0]
             CallbackHandler.token_result["code"] = params.get("code", [None])[0]
             CallbackHandler.token_result["error"] = params.get("error", [None])[0]
-            
+
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
@@ -87,8 +107,6 @@ class CallbackHandler(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(b"<h2>Login complete. Return to your terminal.</h2><script>setTimeout(function(){window.close();}, 2000);</script>")
         else:
-            # We serve an HTML page that reads the URL fragment (where Supabase puts the token)
-            # and redirects back to this same server with query parameters.
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
@@ -106,7 +124,6 @@ class CallbackHandler(BaseHTTPRequestHandler):
                     window.location.replace("/callback" + window.location.search);
                 } else {
                     document.body.innerHTML = "<h2>No token found in URL. Return to your terminal.</h2>";
-                    // Just unblock the local server
                     window.location.replace("/callback?error=no_token");
                 }
             };
@@ -121,108 +138,135 @@ class CallbackHandler(BaseHTTPRequestHandler):
 
 def cmd_login():
     """Handle login command with Google OAuth."""
+    if is_logged_in():
+        creds = load_credentials()
+        if creds:
+            print_info(f"Already logged in as: {creds.get('email', 'unknown')}")
+            if not prompt_yes_no("Do you want to login with a different account?"):
+                return True
+            delete_credentials()
+
+    # Pre-prompt for email as requested
+    print_header("Login")
+    while True:
+        email_input = prompt_input("Enter your North South University email")
+        if not email_input:
+            print_error("Email cannot be empty.")
+            continue
+        if not email_input.endswith("@northsouth.edu"):
+            print_error("Invalid email. Only @northsouth.edu accounts are allowed.")
+            print_info("Please try again.")
+            continue
+        break
+
     oauth_url = build_supabase_oauth_url()
 
     if not oauth_url or not oauth_url.startswith("http"):
-        print("❌ Login failed: SUPABASE_URL not configured.")
-        print("   Please ensure backend/.env has SUPABASE_URL and SUPABASE_ANON_KEY")
-        return
+        print_error("Login failed: SUPABASE_URL not configured.")
+        print_info("Please ensure backend/.env has SUPABASE_URL and SUPABASE_ANON_KEY")
+        return False
 
-    print("Opening browser for NSU Google login...")
-    print(f"URL: {oauth_url}")
+    print_info("Opening browser for NSU Google login...")
+    print(f"URL: {oauth_url}\n")
 
     try:
         webbrowser.open(oauth_url)
     except Exception:
-        print("Failed to open browser automatically.")
-        print(f"Please open this URL manually: {oauth_url}")
+        print_warning("Failed to open browser automatically.")
+        print_info(f"Please open this URL manually: {oauth_url}")
 
     CallbackHandler.token_result = {}
     server = HTTPServer(("localhost", 54321), CallbackHandler)
-    server.timeout = 1  # Use a short timeout so we can loop and check time
+    server.timeout = 1
 
-    print("Waiting for login... (timeout: 120 seconds)")
+    print_info("Waiting for login... (timeout: 120 seconds)")
+    print("Press Ctrl+C to cancel\n")
 
     import time
     start_time = time.time()
-    # Handle requests until we get a result or hit the 120s timeout
     while not CallbackHandler.token_result and (time.time() - start_time) < 120:
         server.handle_request()
 
     server.server_close()
 
     if CallbackHandler.token_result.get("error"):
-        print(f"❌ Login failed: {CallbackHandler.token_result.get('error')}")
-        return
+        error_msg = CallbackHandler.token_result.get('error', 'Unknown error')
+        print_error(f"Login failed: {error_msg}")
+        return False
 
     access_token = CallbackHandler.token_result.get("access_token")
     refresh_token = CallbackHandler.token_result.get("refresh_token", "")
 
     if not access_token:
-        print("❌ Login failed: no token received.")
-        print("   The login may have been cancelled or timed out.")
-        return
+        print_error("Login failed: no token received.")
+        print_info("The login may have been cancelled or timed out.")
+        return False
 
     email = decode_jwt_email(access_token)
     if not email:
-        print("❌ Login failed: could not extract email from token.")
-        return
+        print_error("Login failed: could not extract email from token.")
+        return False
 
     if not validate_nsu_email(email):
-        print("❌ Login failed: only @northsouth.edu accounts are permitted.")
-        print(f"   Your email: {email}")
-        return
+        print_error("Login failed: only @northsouth.edu accounts are permitted.")
+        print_info(f"Your email: {email}")
+        return False
 
     save_credentials(access_token, refresh_token, email)
-    print(f"✅ Logged in as {email}")
+    print_success(f"Logged in as {email}")
+    return True
 
 
 def cmd_logout():
     """Handle logout command."""
+    if not is_logged_in():
+        print_info("You are not logged in.")
+        return True
+
+    creds = load_credentials()
+    email = creds.get("email", "Unknown") if creds else "Unknown"
+
     delete_credentials()
-    print("Logged out.")
+    print_success(f"Logged out successfully ({email})")
+    return True
 
 
 def cmd_history():
     """Handle history command - fetch and display scan history from API."""
     if not is_logged_in():
-        print("❌ You must be logged in to view history.")
-        print("   Run: python cli/audit_cli.py login")
-        raise SystemExit(1)
-    
-    import httpx
-    
+        print_error("You must be logged in to view history.")
+        print_info("Run: python cli/audit_cli.py login")
+        return False
+
     creds = load_credentials()
     if not creds or not creds.get("access_token"):
-        print("❌ Not logged in. Run 'audit-cli login' first.")
-        raise SystemExit(1)
-    
-    api_url = os.environ.get("API_URL", "http://localhost:8000")
+        print_error("Session expired. Please run 'login' again.")
+        return False
+
     headers = {"Authorization": f"Bearer {creds['access_token']}"}
-    
+
     try:
-        response = httpx.get(f"{api_url}/api/v1/history", headers=headers, timeout=30)
+        response = httpx.get(f"{API_URL}/api/v1/history", headers=headers, timeout=30)
         if response.status_code == 401:
-            print("❌ Session expired. Please run 'audit-cli login' again.")
-            raise SystemExit(1)
+            print_error("Session expired. Please run 'login' again.")
+            delete_credentials()
+            return False
         if response.status_code != 200:
-            print(f"❌ Error fetching history: {response.status_code}")
-            print(response.text)
-            raise SystemExit(1)
-        
+            print_error(f"Error fetching history: {response.status_code}")
+            return False
+
         data = response.json()
         scans = data.get("scans", [])
         total = data.get("total", 0)
-        
+
         if total == 0:
-            print("\n📋 No scan history found.")
-            return
-        
-        print(f"\n📋 Scan History ({total} total):")
-        print("-" * 80)
-        print(f"{'Date':<20} {'Type':<10} {'Program':<8} {'Level':<6} {'Status':<15}")
-        print("-" * 80)
-        
+            print_header("Scan History")
+            print_info("No scan history found.")
+            return True
+
+        print_header(f"Scan History ({total} total)")
+
+        rows = []
         for scan in scans:
             created = scan.get("created_at", "")
             if created:
@@ -230,44 +274,47 @@ def cmd_history():
                     from datetime import datetime
                     dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
                     created = dt.strftime("%Y-%m-%d %H:%M")
-                except:
+                except Exception:
                     pass
-            
+
             input_type = scan.get("input_type", "csv")
             program = scan.get("program", "-")
             level = scan.get("audit_level", "-")
             summary = scan.get("summary", {})
             eligible = summary.get("eligible")
             if eligible is True:
-                status = "Eligible"
+                status = "[green]Eligible[/green]"
             elif eligible is False:
-                status = "Not Eligible"
+                status = "[red]Not Eligible[/red]"
             else:
                 status = "-"
-            
-            print(f"{created:<20} {input_type:<10} {program:<8} {level:<6} {status:<15}")
-        
-        print("-" * 80)
-        
+
+            rows.append([created, input_type, program, level, status])
+
+        if RICH_AVAILABLE:
+            from cli.ui import create_table
+            table = create_table(['Date', 'Type', 'Program', 'Level', 'Status'], rows)
+            console.print(table)
+        else:
+            print_table(['Date', 'Type', 'Program', 'Level', 'Status'], rows)
+
+        return True
+
     except httpx.RequestError as e:
-        print(f"❌ Network error: {e}")
-        raise SystemExit(1)
+        print_error(f"Network error: {e}")
+        return False
 
 
 def send_audit_to_api(result: dict, input_type: str = "csv", csv_text: str = "") -> bool:
     """Send audit result to API to save to history."""
-    import httpx
-    
     creds = load_credentials()
     if not creds or not creds.get("access_token"):
-        print("⚠️ Not logged in - cannot save to history.")
+        print_warning("Not logged in - cannot save to history.")
         return False
-    
-    api_url = os.environ.get("API_URL", "http://localhost:8000")
+
     headers = {"Authorization": f"Bearer {creds['access_token']}"}
-    
     result_json = result.get("result_json", {})
-    
+
     payload = {
         "student_id": result_json.get("student_id", ""),
         "program": result_json.get("program", ""),
@@ -278,371 +325,407 @@ def send_audit_to_api(result: dict, input_type: str = "csv", csv_text: str = "")
         "result_json": result_json,
         "result_text": result.get("result_text", ""),
     }
-    
+
     try:
         response = httpx.post(
-            f"{api_url}/api/v1/audit/save",
+            f"{API_URL}/api/v1/audit/save",
             headers=headers,
             json=payload,
             timeout=30
         )
         if response.status_code == 200:
             data = response.json()
-            print(f"\n✅ Saved to history (ID: {data.get('scan_id', 'N/A')})")
+            print_success(f"Saved to history (ID: {data.get('scan_id', 'N/A')})")
             return True
         else:
-            print(f"\n⚠️ Failed to save to history: {response.status_code}")
+            print_warning(f"Failed to save to history: {response.status_code}")
             return False
     except httpx.RequestError as e:
-        print(f"\n⚠️ Network error - could not save to history: {e}")
+        print_warning(f"Network error - could not save to history: {e}")
         return False
 
 
-def require_login():
-    """Exit with a message if user is not logged in."""
+def require_login() -> bool:
+    """Return False if user is not logged in (for interactive prompts)."""
     if not is_logged_in():
-        print("❌ You must be logged in to run audits with --remote.")
-        print("   Run: python cli/audit_cli.py login")
-        raise SystemExit(1)
+        print_error("You must be logged in to run this command.")
+        print_info("Run: python cli/audit_cli.py login")
+        return False
+    return True
 
 
-def cmd_l1(csv_path: str, program: str = None, remote: bool = False):
-    """Run Level 1 audit (credit tally)."""
-    import asyncio
-    from pathlib import Path
-    
-    if remote:
-        require_login()
-    
-    csv_file = Path(csv_path)
-    if not csv_file.is_absolute():
-        csv_file = Path.cwd() / csv_path
-    
-    if not csv_file.exists():
-        print(f"❌ File not found: {csv_file}")
-        raise SystemExit(1)
-    
-    with open(csv_file, 'r') as f:
-        csv_text = f.read()
-    
-    if remote:
-        async def run_remote():
-            from backend.services.audit_service import run_audit
-            result = await run_audit(
-                csv_text=csv_text,
-                program=program or "BSCSE",
-                audit_level=1,
-                waivers=[],
-                knowledge_file=""
-            )
-            print("\n" + "=" * 60)
-            print(result.get("result_text", ""))
-            print("=" * 60)
-            send_audit_to_api(result, "csv", csv_text)
-        
-        asyncio.run(run_remote())
-    else:
-        from src.level1_credit_tally import main as level1_main
-        sys.argv = ["level1_credit_tally", csv_path]
-        level1_main()
-
-
-def cmd_l2(csv_path: str, program: str = None, remote: bool = False):
-    """Run Level 2 audit (CGPA calculation)."""
-    import asyncio
-    from pathlib import Path
-    
-    if remote:
-        require_login()
-    
-    csv_file = Path(csv_path)
-    if not csv_file.is_absolute():
-        csv_file = Path.cwd() / csv_path
-    
-    if not csv_file.exists():
-        print(f"❌ File not found: {csv_file}")
-        raise SystemExit(1)
-    
-    with open(csv_file, 'r') as f:
-        csv_text = f.read()
-    
-    if remote:
-        async def run_remote():
-            from backend.services.audit_service import run_audit
-            result = await run_audit(
-                csv_text=csv_text,
-                program=program or "BSCSE",
-                audit_level=2,
-                waivers=[],
-                knowledge_file=""
-            )
-            print("\n" + "=" * 60)
-            print(result.get("result_text", ""))
-            print("=" * 60)
-            send_audit_to_api(result, "csv", csv_text)
-        
-        asyncio.run(run_remote())
-    else:
-        from src.level2_cgpa_calculator import main as level2_main
-        sys.argv = ["level2_cgpa_calculator", csv_path]
-        level2_main()
-
-
-def cmd_l3(csv_path: str, program: str = None, remote: bool = False):
-    """Run Level 3 audit (full graduation check)."""
-    import asyncio
-    from pathlib import Path
-    
-    if remote:
-        require_login()
-    
-    project_root = Path(__file__).parent.parent
-    csv_file = Path(csv_path)
-    if not csv_file.is_absolute():
-        csv_file = Path.cwd() / csv_path
-    
-    if not csv_file.exists():
-        print(f"❌ File not found: {csv_file}")
-        raise SystemExit(1)
-    
-    with open(csv_file, 'r') as f:
-        csv_text = f.read()
-    
-    prog = program
-    knowledge_path = None
-    
-    if prog and (prog.endswith('.md') or '/' in prog or '\\' in prog):
-        knowledge_path = Path(prog)
-        if not knowledge_path.is_absolute():
-            knowledge_path = Path.cwd() / prog
-    else:
-        if not prog:
-            from src.level3_audit_engine import parse_transcript
-            _, prog, _ = parse_transcript(csv_path)
-        knowledge_path = project_root / "program_knowledge" / f"program_knowledge_{prog}.md"
-    
-    if remote:
-        async def run_remote():
-            from backend.services.audit_service import run_audit
-            result = await run_audit(
-                csv_text=csv_text,
-                program=prog or "BSCSE",
-                audit_level=3,
-                waivers=[],
-                knowledge_file=str(knowledge_path)
-            )
-            print("\n" + "=" * 60)
-            print(result.get("result_text", ""))
-            print("=" * 60)
-            send_audit_to_api(result, "csv", csv_text)
-        
-        asyncio.run(run_remote())
-    else:
-        from src.level3_audit_engine import main as level3_main
-        sys.argv = ["level3_audit_engine", csv_path, str(knowledge_path)]
-        level3_main()
-        knowledge_path = project_root / "program_knowledge" / f"program_knowledge_{program}.md"
-
-    # Phase 1 expects sys.argv format
-    sys.argv = ["level3_audit_engine", csv_path, str(knowledge_path)]
-    level3_main()
-
-
-def get_ocr_audit_level():
-    """Prompt user for audit level."""
+def get_csv_path(prompt_msg: str = "Enter CSV file path") -> str | None:
+    """Prompt for CSV path with validation and re-prompt on invalid input."""
     while True:
-        try:
-            level = input("Enter audit level (1, 2, or 3): ").strip()
-            if level in ('1', '2', '3'):
-                return int(level)
-            print("Please enter 1, 2, or 3")
-        except (EOFError, KeyboardInterrupt):
-            print("\nCancelled.")
-            raise SystemExit(0)
+        csv_path = prompt_input(prompt_msg)
+        if not csv_path:
+            print_error("Please enter a file path.")
+            continue
+
+        csv_file = Path(csv_path)
+        if not csv_file.is_absolute():
+            csv_file = Path.cwd() / csv_path
+
+        if not csv_file.exists():
+            print_error(f"File not found: {csv_file}")
+            print_info("Please enter a valid file path.")
+            continue
+
+        if not csv_file.is_file():
+            print_error(f"Not a file: {csv_file}")
+            continue
+
+        return csv_path
 
 
-def get_ocr_program():
-    """Prompt user for program."""
-    while True:
-        try:
-            program = input("Enter program (BSCSE, BSEEE, or LLB): ").strip().upper()
-            if program in ('BSCSE', 'BSEEE', 'LLB'):
-                return program
-            print("Please enter BSCSE, BSEEE, or LLB")
-        except (EOFError, KeyboardInterrupt):
-            print("\nCancelled.")
-            raise SystemExit(0)
+def get_program() -> str | None:
+    """Prompt for program selection with validation."""
+    programs = ['BSCSE', 'BSEEE', 'LLB']
+    print_header("Select Program")
+    idx = prompt_choice("Choose program", programs)
+    if idx >= 0 and idx < len(programs):
+        return programs[idx]
+    return None
 
 
-def get_ocr_file_path():
-    """Prompt user for file path."""
-    while True:
-        try:
-            file_path = input("Enter file path (PNG, JPG, or PDF): ").strip()
-            if file_path:
-                return file_path
-            print("Please enter a file path")
-        except (EOFError, KeyboardInterrupt):
-            print("\nCancelled.")
-            raise SystemExit(0)
+def get_audit_level() -> int | None:
+    """Prompt for audit level with validation."""
+    levels = ['Level 1 - Credit Tally', 'Level 2 - CGPA Calculator', 'Level 3 - Full Audit']
+    print_header("Select Audit Level")
+    idx = prompt_choice("Choose audit level", levels)
+    if idx >= 0 and idx < len(levels):
+        return idx + 1
+    return None
 
 
-def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None):
-    """Run OCR on image/PDF and then audit."""
-    require_login()
-    
-    import asyncio
-    from pathlib import Path as FilePath
-    
-    # If no file path provided, ask interactively
-    if not file_path:
-        file_path = get_ocr_file_path()
-    
-    # Resolve file path
-    file_path_obj = FilePath(file_path)
-    if not file_path_obj.is_absolute():
-        file_path_obj = FilePath.cwd() / file_path
-    
-    if not file_path_obj.exists():
-        print(f"❌ File not found: {file_path_obj}")
-        raise SystemExit(1)
-    
-    # Check file type
-    ext = file_path_obj.suffix.lower()
-    if ext not in ('.png', '.jpg', '.jpeg', '.pdf'):
-        print("❌ File must be PNG, JPG, or PDF")
-        raise SystemExit(1)
-    
-    print(f"\n📄 Processing: {file_path_obj.name}")
-    print(f"🔍 Running OCR...")
-    
-    # Load file
-    with open(file_path_obj, 'rb') as f:
-        file_bytes = f.read()
-    
-    # Import backend services
-    from backend.services.ocr_service import process_ocr, process_pdf_first_page
-    from backend.services.audit_service import run_audit
-    
-    async def run_ocr_audit():
-        # Convert PDF if needed
-        if ext == '.pdf':
-            img_bytes = await process_pdf_first_page(file_bytes)
+def run_audit_offline(csv_path: str, level: int, program: str = None) -> bool:
+    """Run audit using Phase 1 archive engine (offline mode)."""
+    try:
+        if level == 1:
+            from src.level1_credit_tally import main as level_main
+            sys.argv = ["level1_credit_tally", csv_path]
+        elif level == 2:
+            from src.level2_cgpa_calculator import main as level_main
+            sys.argv = ["level2_cgpa_calculator", csv_path]
+        elif level == 3:
+            from src.level3_audit_engine import main as level_main, parse_transcript
+            prog = program
+            if not prog:
+                _, prog, _ = parse_transcript(csv_path)
+            project_root = Path(__file__).parent.parent
+            knowledge_path = project_root / "program_knowledge" / f"program_knowledge_{prog}.md"
+            sys.argv = ["level3_audit_engine", csv_path, str(knowledge_path)]
         else:
-            img_bytes = file_bytes
-        
-        # Run OCR
-        ocr_result = await process_ocr(img_bytes)
-        
-        print(f"   OCR Confidence: {ocr_result.confidence_avg:.2f}")
-        print(f"   Rows Extracted: {ocr_result.extracted_row_count}")
-        
-        if ocr_result.warnings:
-            print(f"   Warnings: {len(ocr_result.warnings)}")
-        
-        if ocr_result.extracted_row_count == 0:
-            print("❌ No course data could be extracted from the image")
-            raise SystemExit(1)
-        
-        # Ask for program if not provided
-        prog = program
-        if not prog:
-            prog = get_ocr_program()
-        
-        # Ask for audit level if not provided
-        level = audit_level
-        if level is None:
-            level = get_ocr_audit_level()
-        
-        print(f"\n📊 Running Level {level} Audit for {prog}...")
-        
-        # Find knowledge file
-        project_root = FilePath(__file__).parent.parent
-        knowledge_file = project_root / "program_knowledge" / f"program_knowledge_{prog}.md"
-        
-        if level == 3 and not knowledge_file.exists():
-            print(f"❌ Knowledge file not found: {knowledge_file}")
-            raise SystemExit(1)
-        
-        # Run audit
-        audit_result = await run_audit(
-            csv_text=ocr_result.csv_text,
+            print_error(f"Invalid audit level: {level}")
+            return False
+
+        level_main()
+        return True
+    except Exception as e:
+        print_error(f"Error running audit: {e}")
+        return False
+
+
+async def run_audit_remote(csv_path: str, level: int, program: str = None, remote: bool = False) -> dict | None:
+    """Run audit using backend service (remote mode)."""
+    try:
+        from backend.services.audit_service import run_audit
+
+        with open(csv_path, 'r') as f:
+            csv_text = f.read()
+
+        prog = program or "BSCSE"
+        knowledge_file = ""
+        if level == 3:
+            project_root = Path(__file__).parent.parent
+            knowledge_file = str(project_root / "program_knowledge" / f"program_knowledge_{prog}.md")
+
+        result = await run_audit(
+            csv_text=csv_text,
             program=prog,
             audit_level=level,
             waivers=[],
-            knowledge_file=str(knowledge_file) if level == 3 else ""
+            knowledge_file=knowledge_file
         )
-        
-        return ocr_result, audit_result
-    
-    # Run async function
-    try:
-        ocr_result, audit_result = asyncio.run(run_ocr_audit())
+        return result
     except Exception as e:
-        print(f"❌ Error: {e}")
-        raise SystemExit(1)
-    
-    # Print result
-    print("\n" + "=" * 60)
-    print(audit_result.get('result_text', 'No output'))
-    print("=" * 60)
-    
-    # Print summary
-    print("\n📋 SUMMARY:")
-    print(f"   Program: {audit_result.get('program')}")
-    print(f"   Level: {audit_result.get('audit_level')}")
-    print(f"   Total Credits: {audit_result.get('total_credits')}")
-    if audit_result.get('cgpa'):
-        print(f"   CGPA: {audit_result.get('cgpa')}")
-    if audit_result.get('standing'):
-        print(f"   Standing: {audit_result.get('standing')}")
-    if audit_result.get('eligible') is not None:
-        print(f"   Eligible: {'Yes' if audit_result.get('eligible') else 'No'}")
-    if audit_result.get('missing_courses'):
-        print(f"   Missing Courses: {', '.join(audit_result.get('missing_courses', []))}")
+        print_error(f"Error running remote audit: {e}")
+        return None
 
 
-def cmd_web(npm_cmd="npm"):
-    """Run both backend and frontend for local development."""
+def cmd_audit(level: int, csv_path: str = None, program: str = None, remote: bool = False):
+    """Run audit at specified level (generic handler for L1, L2, L3)."""
+    level_names = {1: "Credit Tally", 2: "CGPA Calculator", 3: "Full Graduation Audit"}
+    level_name = level_names.get(level, f"Level {level}")
+
+    if remote and not require_login():
+        return False
+
+    print_header(f"Level {level} Audit - {level_name}")
+
+    if not csv_path:
+        csv_path = get_csv_path()
+        if not csv_path:
+            return False
+
+    csv_file = Path(csv_path)
+    if not csv_file.is_absolute():
+        csv_file = Path.cwd() / csv_path
+
+    if not csv_file.exists():
+        print_error(f"File not found: {csv_file}")
+        return False
+
+    prog = program
+    if not prog:
+        if level == 3:
+            try:
+                from src.level3_audit_engine import parse_transcript
+                _, prog, _ = parse_transcript(csv_path)
+                print_info(f"Detected program: {prog}")
+            except Exception:
+                pass
+
+        if not prog:
+            prog = get_program()
+            if not prog:
+                return False
+
+    print_info(f"Program: {prog}")
+    print_info(f"CSV: {csv_file}")
+    print_info(f"Mode: {'Remote (saves to history)' if remote else 'Offline'}")
+    print_divider()
+
+    if remote:
+        import asyncio
+        result = asyncio.run(run_audit_remote(csv_path, level, prog, remote))
+        if result:
+            print_divider()
+            print(result.get("result_text", ""))
+            print_divider()
+            with open(csv_file, 'r') as f:
+                csv_text = f.read()
+            send_audit_to_api(result, "csv", csv_text)
+            return True
+        return False
+    else:
+        return run_audit_offline(csv_path, level, prog)
+
+
+def cmd_l1(csv_path: str = None, program: str = None, remote: bool = False):
+    """Run Level 1 audit (credit tally)."""
+    return cmd_audit(1, csv_path, program, remote)
+
+
+def cmd_l2(csv_path: str = None, program: str = None, remote: bool = False):
+    """Run Level 2 audit (CGPA calculation)."""
+    return cmd_audit(2, csv_path, program, remote)
+
+
+def cmd_l3(csv_path: str = None, program: str = None, remote: bool = False):
+    """Run Level 3 audit (full graduation check)."""
+    return cmd_audit(3, csv_path, program, remote)
+
+
+def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None, remote: bool = False):
+    """Run OCR on image/PDF and then audit."""
+    if remote and not require_login():
+        return False
+
+    print_header("OCR Transcript Processing")
+
+    if not file_path:
+        file_path = prompt_input("Enter file path (PNG, JPG, or PDF)")
+        if not file_path:
+            print_error("No file path provided.")
+            return False
+
+    file_path_obj = Path(file_path)
+    if not file_path_obj.is_absolute():
+        file_path_obj = Path.cwd() / file_path
+
+    if not file_path_obj.exists():
+        print_error(f"File not found: {file_path_obj}")
+        return False
+
+    ext = file_path_obj.suffix.lower()
+    if ext not in ('.png', '.jpg', '.jpeg', '.pdf'):
+        print_error("File must be PNG, JPG, or PDF")
+        return False
+
+    print_info(f"Processing: {file_path_obj.name}")
+
+    if not program:
+        program = get_program()
+        if not program:
+            return False
+
+    if audit_level is None:
+        audit_level = get_audit_level()
+        if audit_level is None:
+            return False
+
+    print_info(f"Running {audit_level} audit for {program}...")
+
+    try:
+        import asyncio
+        from backend.services.ocr_service import process_ocr, process_pdf_first_page
+        from backend.services.audit_service import run_audit
+
+        async def run_ocr_audit():
+            with open(file_path_obj, 'rb') as f:
+                file_bytes = f.read()
+
+            if ext == '.pdf':
+                img_bytes = await process_pdf_first_page(file_bytes)
+            else:
+                img_bytes = file_bytes
+
+            ocr_result = await process_ocr(img_bytes)
+
+            print_success(f"OCR Confidence: {ocr_result.confidence_avg:.2f}")
+            print_info(f"Rows Extracted: {ocr_result.extracted_row_count}")
+
+            if ocr_result.warnings:
+                print_warning(f"Warnings: {len(ocr_result.warnings)}")
+
+            if ocr_result.extracted_row_count == 0:
+                print_error("No course data could be extracted from the image")
+                return None, None
+
+            project_root = Path(__file__).parent.parent
+            knowledge_file = str(project_root / "program_knowledge" / f"program_knowledge_{program}.md")
+
+            if audit_level == 3:
+                knowledge_file_path = Path(knowledge_file)
+                if not knowledge_file_path.exists():
+                    print_error(f"Knowledge file not found: {knowledge_file_path}")
+                    return None, None
+
+            audit_result = await run_audit(
+                csv_text=ocr_result.csv_text,
+                program=program,
+                audit_level=audit_level,
+                waivers=[],
+                knowledge_file=knowledge_file if audit_level == 3 else ""
+            )
+
+            return ocr_result, audit_result
+
+        ocr_result, audit_result = asyncio.run(run_ocr_audit())
+
+        if audit_result is None:
+            return False
+
+        print_divider()
+        print(audit_result.get('result_text', 'No output'))
+        print_divider()
+
+        print_header("SUMMARY")
+        result_json = audit_result.get('result_json', audit_result)
+        print(f"  Program: {result_json.get('program', program)}")
+        print(f"  Level: {result_json.get('audit_level', audit_level)}")
+        print(f"  Total Credits: {result_json.get('total_credits', 'N/A')}")
+        if result_json.get('cgpa'):
+            print(f"  CGPA: {result_json.get('cgpa')}")
+        if result_json.get('standing'):
+            print(f"  Standing: {result_json.get('standing')}")
+        if result_json.get('eligible') is not None:
+            eligible = result_json.get('eligible')
+            status = "[green]Eligible[/green]" if eligible else "[red]Not Eligible[/red]"
+            print(f"  Eligible: {status}")
+        if result_json.get('missing_courses'):
+            print(f"  Missing Courses: {', '.join(result_json.get('missing_courses', []))}")
+
+        if remote:
+            send_audit_to_api(audit_result, "ocr", ocr_result.csv_text if ocr_result else "")
+
+        return True
+
+    except Exception as e:
+        print_error(f"Error: {e}")
+        return False
+
+
+def cmd_web(npm_cmd: str = "npm", local_mcp: bool = False, mcp_mode: str = "offline"):
+    """Run backend, frontend, and optionally MCP server for local development."""
     import subprocess
-    import sys
-    import os
-    from pathlib import Path
 
     project_root = Path(__file__).parent.parent
     backend_dir = project_root / "backend"
     frontend_dir = project_root / "frontend"
 
-    print("=" * 60)
-    print("Starting NSU Audit Core - Local Development")
-    print("=" * 60)
-    print("\nBackend: http://localhost:8000")
-    print("Frontend: http://localhost:5173")
-    print("\nPress Ctrl+C to stop both servers")
-    print("=" * 60)
+    print_title("NSU Audit Core - Local Development")
+    print_info("Starting all services...")
+    print()
+    print("  Backend:    http://localhost:8000")
+    print("  Frontend:   http://localhost:5173")
+    if local_mcp:
+        print(f"  MCP Server: Running in background ({mcp_mode} mode)")
+    print()
+    print_info("Press Ctrl+C to stop all servers")
 
     backend_process = None
     frontend_process = None
+    mcp_process = None
 
     try:
-        print("\n[1/2] Starting backend (FastAPI)...")
+        print("\n[1/3] Starting backend (FastAPI)...")
         backend_process = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--port", "8000"],
             cwd=str(backend_dir),
             env={**os.environ, "PYTHONPATH": str(backend_dir)},
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
-        print("[2/2] Starting frontend (Vite)...")
+        print("[2/3] Starting frontend (Vite)...")
         frontend_process = subprocess.Popen(
             [npm_cmd, "run", "dev"],
             cwd=str(frontend_dir),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
-        print("\n✅ Both servers are running!")
-        print("   Backend: http://localhost:8000")
-        print("   Frontend: http://localhost:5173")
+        if local_mcp:
+            print(f"[3/3] Starting MCP server ({mcp_mode} mode)...")
+            mcprun_script = project_root / "mcprun"
+            if mcp_mode == "remote":
+                mcp_cmd = ["bash", str(mcprun_script), "remote"]
+            else:
+                mcp_cmd = ["bash", str(mcprun_script), "offline"]
+
+            mcp_process = subprocess.Popen(
+                mcp_cmd,
+                cwd=str(project_root),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+
+            import time
+            time.sleep(3)
+
+            print()
+            print_title("MCP Server Ready")
+            print_info("To use MCP with OpenCode, add to .opencode/config.json:")
+            print("""
+{
+  "mcpServers": [
+    {
+      "name": "nsu-audit",
+      "command": "python /path/to/mcp/mcp_server.py"
+    }
+  ]
+}
+""")
+
+        print_success("\nAll services running!")
+        print_info("Backend:    http://localhost:8000")
+        print_info("Frontend:   http://localhost:5173")
 
         backend_process.wait()
+
     except KeyboardInterrupt:
         print("\n\nShutting down servers...")
     finally:
@@ -652,7 +735,149 @@ def cmd_web(npm_cmd="npm"):
         if frontend_process:
             frontend_process.terminate()
             frontend_process.wait()
-        print("✅ Servers stopped.")
+        if mcp_process:
+            try:
+                import signal
+                os.killpg(os.getpgid(mcp_process.pid), signal.SIGTERM)
+            except Exception:
+                mcp_process.terminate()
+                mcp_process.wait()
+        print_success("All servers stopped.")
+
+
+def show_help():
+    """Display help information."""
+    print_title("NSU Audit Core CLI - Help")
+
+    if RICH_AVAILABLE:
+        from rich.columns import Columns
+        from rich.panel import Panel
+
+        panels = [
+            Panel("[cyan]python cli/audit_cli.py login[/cyan]\nLogin with NSU Google account", title="Login", border_style="green"),
+            Panel("[cyan]python cli/audit_cli.py logout[/cyan]\nLogout and clear credentials", title="Logout", border_style="red"),
+            Panel("[cyan]python cli/audit_cli.py history[/cyan]\nView your scan history", title="History", border_style="blue"),
+            Panel("[cyan]python cli/audit_cli.py web[/cyan]\nRun backend and frontend locally", title="Web", border_style="yellow"),
+        ]
+        console.print(Columns(panels))
+
+    print()
+    print_header("Audit Commands")
+    print("  python cli/audit_cli.py l1 <csv> [program] [--remote]")
+    print("      Run Level 1 audit (Credit Tally)")
+    print()
+    print("  python cli/audit_cli.py l2 <csv> [program] [--remote]")
+    print("      Run Level 2 audit (CGPA Calculator)")
+    print()
+    print("  python cli/audit_cli.py l3 <csv> [program] [--remote]")
+    print("      Run Level 3 audit (Full Graduation Check)")
+    print()
+    print("  python cli/audit_cli.py ocr <file> [program] [level]")
+    print("      Run OCR on image/PDF and audit")
+    print()
+    print_header("Authentication")
+    print("  --remote flag saves results to your account history")
+    print("  Login required for remote mode and history")
+    print()
+    print_header("Interactive Mode")
+    print("  Run without arguments for interactive menu:")
+    print("  python cli/audit_cli.py")
+
+
+def show_welcome():
+    """Display welcome screen."""
+    print_title("NSU Audit Core CLI")
+    print()
+    if is_logged_in():
+        creds = load_credentials()
+        email = creds.get("email", "Unknown") if creds else "Unknown"
+        print_success(f"Logged in as: {email}")
+    else:
+        print_info("Not logged in (remote mode disabled)")
+    print()
+
+
+def interactive_menu():
+    """Show interactive menu with arrow key navigation."""
+    from cli.ui import interactive_menu_prompt, pause
+    
+    options = [
+        "Offline Mode",
+        "Remote Mode",
+        "Login",
+        "Logout",
+        "Help",
+        "Exit"
+    ]
+
+    while True:
+        subtitle = ""
+        if is_logged_in():
+            creds = load_credentials()
+            email = creds.get("email", "Unknown") if creds else "Unknown"
+            if RICH_AVAILABLE:
+                subtitle = f"[bold green]✓[/bold green] Logged in: {email}"
+            else:
+                subtitle = f"✅ Logged in: {email}"
+        else:
+            if RICH_AVAILABLE:
+                subtitle = "[bold yellow]![/bold yellow] Not logged in"
+            else:
+                subtitle = "⚠️  Not logged in"
+
+        try:
+            selected_idx = interactive_menu_prompt("=== MAIN MENU ===", subtitle, options)
+            choice = options[selected_idx]
+            clear_screen()
+            
+            if choice == "Exit":
+                print_success("Goodbye!")
+                break
+            
+            elif choice == "Help":
+                show_help()
+                pause()
+                
+            elif choice == "Logout":
+                cmd_logout()
+                pause()
+                
+            elif choice == "Login":
+                success = cmd_login()
+                if success:
+                    pause()
+                else:
+                    print_info("\nPress Enter to return to menu...")
+                    prompt_input("Press Enter to continue")
+                    
+            elif choice == "Offline Mode":
+                print_header("Offline Mode")
+                level = get_audit_level()
+                if level:
+                    cmd_audit(level=level, remote=False)
+                pause()
+                    
+            elif choice == "Remote Mode":
+                print_header("Remote Mode")
+                if not is_logged_in():
+                    print_warning("You must login first")
+                    pause("Press Enter to go to Login...")
+                    cmd_login()
+                    # After login, check if successful
+                    if not is_logged_in():
+                        continue # return to menu
+                    clear_screen()
+                    print_header("Remote Mode")
+                    
+                level = get_audit_level()
+                if level:
+                    cmd_audit(level=level, remote=True)
+                pause()
+
+        except (EOFError, KeyboardInterrupt):
+            print("\n")
+            print_info("Exiting...")
+            break
 
 
 def main():
@@ -661,9 +886,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python cli/audit_cli.py login              # Login with NSU Google account
-  python cli/audit_cli.py logout             # Logout
-  python cli/audit_cli.py web                # Run both backend and frontend locally
+  python cli/audit_cli.py                # Interactive menu
+  python cli/audit_cli.py login          # Login with NSU Google account
+  python cli/audit_cli.py logout         # Logout
+  python cli/audit_cli.py web            # Run both backend and frontend locally
   python cli/audit_cli.py l1 data/test.csv BSCSE   # Run Level 1 audit
   python cli/audit_cli.py l2 data/test.csv BSCSE   # Run Level 2 audit
   python cli/audit_cli.py l3 data/test.csv BSCSE   # Run Level 3 audit
@@ -672,103 +898,48 @@ Examples:
   python cli/audit_cli.py ocr image.png BSEEE 3   # OCR + Level 3 audit
   python cli/audit_cli.py history                 # View scan history
 
-Note: All audit commands (l1, l2, l3, ocr) work offline without login.
-      Use --remote flag to save results to your account history.
+Note: Audit commands (l1, l2, l3) work offline. Use --remote to save results.
         """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Login command
     subparsers.add_parser("login", help="Login with NSU Google account")
-
-    # Logout command
     subparsers.add_parser("logout", help="Logout and clear credentials")
-
-    # History command
     subparsers.add_parser("history", help="View your scan history")
+    subparsers.add_parser("help", help="Show help information")
 
-    # Level 1 command
     l1_parser = subparsers.add_parser("l1", help="Run Level 1 audit (credit tally)")
-    l1_parser.add_argument("csv", help="Path to CSV file")
-    l1_parser.add_argument(
-        "program",
-        nargs="?",
-        help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
-    )
-    l1_parser.add_argument(
-        "--remote",
-        action="store_true",
-        help="Save result to your account history",
-    )
+    l1_parser.add_argument("csv", nargs="?", help="Path to CSV file")
+    l1_parser.add_argument("program", nargs="?", help="Program (BSCSE, BSEEE, LLB)")
+    l1_parser.add_argument("--remote", action="store_true", help="Save result to history")
 
-    # Level 2 command
     l2_parser = subparsers.add_parser("l2", help="Run Level 2 audit (CGPA calculation)")
-    l2_parser.add_argument("csv", help="Path to CSV file")
-    l2_parser.add_argument(
-        "program",
-        nargs="?",
-        help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
-    )
-    l2_parser.add_argument(
-        "--remote",
-        action="store_true",
-        help="Save result to your account history",
-    )
+    l2_parser.add_argument("csv", nargs="?", help="Path to CSV file")
+    l2_parser.add_argument("program", nargs="?", help="Program (BSCSE, BSEEE, LLB)")
+    l2_parser.add_argument("--remote", action="store_true", help="Save result to history")
 
-    # Level 3 command
-    l3_parser = subparsers.add_parser(
-        "l3", help="Run Level 3 audit (full graduation check)"
-    )
-    l3_parser.add_argument("csv", help="Path to CSV file")
-    l3_parser.add_argument(
-        "program",
-        nargs="?",
-        help="Program (BSCSE, BSEEE, LLB) - optional, detected from CSV",
-    )
-    l3_parser.add_argument(
-        "--remote",
-        action="store_true",
-        help="Save result to your account history",
-    )
+    l3_parser = subparsers.add_parser("l3", help="Run Level 3 audit (full graduation check)")
+    l3_parser.add_argument("csv", nargs="?", help="Path to CSV file")
+    l3_parser.add_argument("program", nargs="?", help="Program (BSCSE, BSEEE, LLB)")
+    l3_parser.add_argument("--remote", action="store_true", help="Save result to history")
 
-    # OCR command
-    ocr_parser = subparsers.add_parser(
-        "ocr", help="Run OCR on image/PDF and then audit"
-    )
-    ocr_parser.add_argument(
-        "file",
-        nargs="?",
-        default=None,
-        help="Path to image (PNG, JPG) or PDF file - will prompt if not provided"
-    )
-    ocr_parser.add_argument(
-        "program",
-        nargs="?",
-        default=None,
-        help="Program (BSCSE, BSEEE, LLB) - will prompt if not provided",
-    )
-    ocr_parser.add_argument(
-        "level",
-        nargs="?",
-        type=int,
-        default=None,
-        help="Audit level (1, 2, or 3) - will prompt if not provided",
-    )
+    ocr_parser = subparsers.add_parser("ocr", help="Run OCR on image/PDF and then audit")
+    ocr_parser.add_argument("file", nargs="?", default=None, help="Path to image/PDF")
+    ocr_parser.add_argument("program", nargs="?", default=None, help="Program (BSCSE, BSEEE, LLB)")
+    ocr_parser.add_argument("level", nargs="?", type=int, default=None, help="Audit level (1, 2, or 3)")
+    ocr_parser.add_argument("--remote", action="store_true", help="Save result to history")
 
-    # Web command
-    web_parser = subparsers.add_parser("web", help="Run both backend and frontend for local development")
-    web_parser.add_argument(
-        "npm",
-        nargs="?",
-        default="npm",
-        help="Path to npm executable (default: npm)",
-    )
+    web_parser = subparsers.add_parser("web", help="Run backend and frontend for local development")
+    web_parser.add_argument("npm", nargs="?", default="npm", help="Path to npm executable")
+    web_parser.add_argument("--mcp", action="store_true", help="Also start MCP server")
+    web_parser.add_argument("--mcp-mode", choices=["offline", "remote"], default="offline", help="MCP server mode")
 
     args = parser.parse_args()
 
     if not args.command:
-        parser.print_help()
+        show_welcome()
+        interactive_menu()
         return
 
     if args.command == "login":
@@ -777,6 +948,8 @@ Note: All audit commands (l1, l2, l3, ocr) work offline without login.
         cmd_logout()
     elif args.command == "history":
         cmd_history()
+    elif args.command == "help":
+        show_help()
     elif args.command == "l1":
         cmd_l1(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "l2":
@@ -784,9 +957,9 @@ Note: All audit commands (l1, l2, l3, ocr) work offline without login.
     elif args.command == "l3":
         cmd_l3(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "ocr":
-        cmd_ocr(args.file, args.program, args.level)
+        cmd_ocr(args.file, args.program, args.level, getattr(args, 'remote', False))
     elif args.command == "web":
-        cmd_web(args.npm)
+        cmd_web(args.npm, getattr(args, 'mcp', False), getattr(args, 'mcp_mode', 'offline'))
 
 
 if __name__ == "__main__":

@@ -69,3 +69,8 @@ model_weights/
 # =========================
 pickup_guide.md
 mcp/credentials.json
+
+# =========================
+# OpenCode MCP Config (local paths)
+# =========================
+opencode.json
