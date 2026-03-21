@@ -1,6 +1,9 @@
 import { supabase } from './supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  throw new Error('Missing required environment variable: VITE_API_URL must be set in frontend/.env');
+}
 
 async function getAuthHeaders() {
   const { data: { session } } = await supabase.auth.getSession();

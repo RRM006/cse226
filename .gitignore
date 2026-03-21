@@ -20,7 +20,6 @@ mcp/venv/
 # Environment Variables
 # =========================
 .env
-.env.example
 .env.local
 .env.*.local
 
@@ -74,3 +73,15 @@ mcp/credentials.json
 # OpenCode MCP Config (local paths)
 # =========================
 opencode.json
+# =========================
+# Mobile / Flutter
+# =========================
+mobile/build/
+mobile/.dart_tool/
+mobile/.env
+mobile/*.lock
+
+# =========================
+# Python Virtual Environments
+# =========================
+.venv/

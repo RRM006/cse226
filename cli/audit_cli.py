@@ -17,9 +17,13 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 from dotenv import load_dotenv
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "archive"))
-sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+for _path in [
+    Path(__file__).parent.parent / "archive",
+    Path(__file__).parent.parent,
+    Path(__file__).parent.parent / "backend",
+]:
+    if _path.exists():
+        sys.path.insert(0, str(_path))
 
 from cli.ui import (
     console,
@@ -673,104 +677,6 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None,
         return False
 
 
-def cmd_web(npm_cmd: str = "npm", local_mcp: bool = False, mcp_mode: str = "offline"):
-    """Run backend, frontend, and optionally MCP server for local development."""
-    import subprocess
-
-    project_root = Path(__file__).parent.parent
-    backend_dir = project_root / "backend"
-    frontend_dir = project_root / "frontend"
-
-    print_title("NSU Audit Core - Local Development")
-    print_info("Starting all services...")
-    print()
-    print("  Backend:    http://localhost:8000")
-    print("  Frontend:   http://localhost:5173")
-    if local_mcp:
-        print(f"  MCP Server: Running in background ({mcp_mode} mode)")
-    print()
-    print_info("Press Ctrl+C to stop all servers")
-
-    backend_process = None
-    frontend_process = None
-    mcp_process = None
-
-    try:
-        print("\n[1/3] Starting backend (FastAPI)...")
-        backend_process = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--port", "8000"],
-            cwd=str(backend_dir),
-            env={**os.environ, "PYTHONPATH": str(backend_dir)},
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-        print("[2/3] Starting frontend (Vite)...")
-        frontend_process = subprocess.Popen(
-            [npm_cmd, "run", "dev"],
-            cwd=str(frontend_dir),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-        if local_mcp:
-            print(f"[3/3] Starting MCP server ({mcp_mode} mode)...")
-            mcprun_script = project_root / "mcprun"
-            if mcp_mode == "remote":
-                mcp_cmd = ["bash", str(mcprun_script), "remote"]
-            else:
-                mcp_cmd = ["bash", str(mcprun_script), "offline"]
-
-            mcp_process = subprocess.Popen(
-                mcp_cmd,
-                cwd=str(project_root),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-
-            import time
-            time.sleep(3)
-
-            print()
-            print_title("MCP Server Ready")
-            print_info("To use MCP with OpenCode, add to .opencode/config.json:")
-            print("""
-{
-  "mcpServers": [
-    {
-      "name": "nsu-audit",
-      "command": "python /path/to/mcp/mcp_server.py"
-    }
-  ]
-}
-""")
-
-        print_success("\nAll services running!")
-        print_info("Backend:    http://localhost:8000")
-        print_info("Frontend:   http://localhost:5173")
-
-        backend_process.wait()
-
-    except KeyboardInterrupt:
-        print("\n\nShutting down servers...")
-    finally:
-        if backend_process:
-            backend_process.terminate()
-            backend_process.wait()
-        if frontend_process:
-            frontend_process.terminate()
-            frontend_process.wait()
-        if mcp_process:
-            try:
-                import signal
-                os.killpg(os.getpgid(mcp_process.pid), signal.SIGTERM)
-            except Exception:
-                mcp_process.terminate()
-                mcp_process.wait()
-        print_success("All servers stopped.")
-
-
 def show_help():
     """Display help information."""
     print_title("NSU Audit Core CLI - Help")
@@ -969,10 +875,6 @@ Note: Audit commands (l1, l2, l3) work offline. Use --remote to save results.
     ocr_parser.add_argument("level", nargs="?", type=int, default=None, help="Audit level (1, 2, or 3)")
     ocr_parser.add_argument("--remote", action="store_true", help="Save result to history")
 
-    web_parser = subparsers.add_parser("web", help="Run backend and frontend for local development")
-    web_parser.add_argument("npm", nargs="?", default="npm", help="Path to npm executable")
-    web_parser.add_argument("--mcp", action="store_true", help="Also start MCP server")
-    web_parser.add_argument("--mcp-mode", choices=["offline", "remote"], default="offline", help="MCP server mode")
 
     args = parser.parse_args()
 
@@ -997,8 +899,6 @@ Note: Audit commands (l1, l2, l3) work offline. Use --remote to save results.
         cmd_l3(args.csv, args.program, getattr(args, 'remote', False))
     elif args.command == "ocr":
         cmd_ocr(args.file, args.program, args.level, getattr(args, 'remote', False))
-    elif args.command == "web":
-        cmd_web(args.npm, getattr(args, 'mcp', False), getattr(args, 'mcp_mode', 'offline'))
 
 
 if __name__ == "__main__":

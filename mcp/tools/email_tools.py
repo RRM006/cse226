@@ -148,7 +148,7 @@ def send_email(
 
 def _log_email(to: str, student_id: str, sent_at: str, message_id: str):
     """Log sent email to local history file."""
-    history_path = config = get_config()['history_path']
+    history_path = get_config()['history_path']
     
     history_entry = {
         'type': 'email',

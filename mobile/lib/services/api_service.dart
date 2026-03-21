@@ -8,7 +8,10 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  static const String _baseUrl = 'https://nsu-audit-api.railway.app';
+  static const String _baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://nsu-audit-api.railway.app',
+  );
   
   String? _accessToken;
 

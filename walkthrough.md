@@ -188,10 +188,10 @@ python cli/audit_cli.py l1 tests/BSCSE/L1/L1_BSCSE_001_basic_passing.csv BSCSE
 
 **Quick Launcher Script:**
 ```bash
-./web                    # Runs backend + frontend
-./web local              # + MCP server (offline)
-./web local remote       # + MCP server (remote mode)
+./web                    # Interactive menu (recommended)
 ```
+
+> Previously: `./web local` and `./web local remote` for MCP modes. These are now selectable from the interactive menu.
 
 ### Method 2: Production Deployment
 
@@ -222,20 +222,11 @@ python cli/audit_cli.py l1 tests/BSCSE/L1/L1_BSCSE_001_basic_passing.csv BSCSE
 | **Production** | Full app | ✅ Yes | ✅ Yes | End users via browser/mobile |
 | **MCP Server** | AI-assisted auditing | Optional | ✅ (for Drive/Gmail) | Admin with LLM client |
 
-> [!NOTE]
-> **No Docker** — Docker was not planned and is not implemented. The `.dockerignore` in backend is a leftover file.
-
 ---
 
 ## ✅ STEP 5: Missing or Unclear Parts (Questions with Answers)
 
-### 1. No Dockerfile
-**Q:** Was Docker deployment planned?
-**A:** No, it was not planned and has not been implemented. The `.dockerignore` file in the backend is just a leftover — it can be safely deleted.
-
----
-
-### 2. Hardcoded Supabase URL in `config.py`
+### 1. Hardcoded Supabase URL in `config.py`
 
 **Q:** Is the hardcoded default URL at line 11 of [config.py](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/backend/config.py) intentional?
 
@@ -250,7 +241,7 @@ python cli/audit_cli.py l1 tests/BSCSE/L1/L1_BSCSE_001_basic_passing.csv BSCSE
 
 ---
 
-### 3. MCP Server Backend URL
+### 2. MCP Server Backend URL
 
 **Q:** Where does the MCP server get its backend URL?
 
@@ -266,21 +257,25 @@ python cli/audit_cli.py l1 tests/BSCSE/L1/L1_BSCSE_001_basic_passing.csv BSCSE
 
 ---
 
-### 4. Mobile App Supabase Configuration
+### 3. Mobile App Supabase Configuration
 
 **Q:** Where are the Supabase URL and anon key configured in the mobile app?
 
-**A (after investigation):** They are **hardcoded directly in the Dart source code**:
+**A:** They use Flutter's **build-time environment variables** (`--dart-define`):
 
-- **Supabase URL + Anon Key** → hardcoded in [auth_service.dart](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/mobile/lib/services/auth_service.dart) at lines 12-14
-- **API Base URL** → hardcoded as `https://nsu-audit-api.railway.app` in [api_service.dart](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/mobile/lib/services/api_service.dart) at line 11
+- **Supabase URL + Anon Key** → via `--dart-define=SUPABASE_URL=...` and `--dart-define=SUPABASE_ANON_KEY=...` in [auth_service.dart](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/mobile/lib/services/auth_service.dart)
+- **API Base URL** → via `--dart-define=API_BASE_URL=...` in [api_service.dart](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/mobile/lib/services/api_service.dart)
 
-> [!WARNING]
-> **This is a concern:** The Supabase anon key is hardcoded in the Dart code. For a university project this is acceptable, but for a real app you'd use Flutter's `--dart-define` or a `.env` loader package. The anon key is a *public* key (it's safe to expose), but the hardcoded API URL means you can't easily switch between local and production without editing code.
+**To build for production:**
+```bash
+flutter build apk --dart-define=SUPABASE_URL=https://your-project.supabase.co                  --dart-define=SUPABASE_ANON_KEY=your_key                  --dart-define=API_BASE_URL=https://your-api.railway.app
+```
+
+See [mobile/.env.example](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/mobile/.env.example) for all required variables.
 
 ---
 
-### 5. Test Framework
+### 4. Test Framework
 
 **Q:** Where are the unit tests? Maybe in `archive/src`?
 
@@ -297,6 +292,7 @@ These are old versions before the code moved to `backend/core/`. They are **not 
 | **Batch test scripts** | `archive/testbat/` (`.sh` and `.bat` files that run CLI commands) |
 | **Load test** | `tests/locustfile.py` (Locust, simulates 20 concurrent users) |
 | **OCR test** | `tests/test_ocr.py` |
+
 | **CI pipeline expects** | `pytest tests/ -v` (in `.github/workflows/ci.yml`) |
 
 > [!IMPORTANT]
@@ -304,19 +300,20 @@ These are old versions before the code moved to `backend/core/`. They are **not 
 
 ---
 
-### 6. Archive Directory
+### 5. Archive Directory
 
 **Q:** Is it still relevant?
 
 **A:** Yes — confirmed by user. The `archive/` directory contains:
 - `archive/src/` — Legacy Phase 1 audit engine files (before they moved to `backend/core/`)
+- Note: `external_transfer.py` and `transfer_handler.py` now exist in **both** `archive/src/` (legacy) and `backend/core/` (API-compatible)
 - `archive/scripts/` — Test runner scripts
 - `archive/testbat/` — Shell/batch scripts for running CLI test cases
 - `archive/test_outputs/` — Expected output files for each test case
 
 ---
 
-### 7. GitHub Actions CI/CD
+### 6. GitHub Actions CI/CD
 
 **Q:** Is the CI pipeline active? What does it do?
 
@@ -337,35 +334,44 @@ These are old versions before the code moved to `backend/core/`. They are **not 
 
 ---
 
-### 8. The `web` File
+### 7. The `web` File
 
 **Q:** What is the file called `web` at the project root?
 
-**A (after investigation):** It's a **bash launcher script** that starts your entire project with one command. Here's what it does:
+**A:** It's a **bash launcher script** that starts your entire project with an **interactive menu**:
 
 ```bash
-./web              # Starts backend (uvicorn) + frontend (npm run dev)
-./web local        # Same + starts MCP server in offline mode
-./web local remote # Same + starts MCP server in remote mode
+./web              # Shows interactive menu (recommended)
 ```
 
-It detects if a `.venv` virtual environment exists and uses it. Internally, it calls `cli/audit_cli.py web` which likely starts the backend and frontend servers together. Think of it as a **convenience shortcut** so you don't have to open multiple terminals.
+The menu has 4 options:
+1. **Local Deploy** — Backend + Frontend
+2. **Local Deploy with MCP** — Backend + Frontend + MCP (offline mode)
+3. **Mobile Local Run** — Backend + instructions for Flutter
+4. **Exit**
+
+Features:
+- Arrow key navigation (↑↓) + Enter to select
+- Colorful `rich` + `questionary` UI
+- Backend health check before starting frontend
+- Port collision detection (warns if 8000/5173 are in use)
+- Graceful shutdown on Ctrl+C
+
+Internally, it calls `web_launcher.py`. Dependencies (`rich`, `questionary`) are auto-installed if missing.
 
 ---
 
-### 9. Frontend `dist/` Committed to Git?
+### 8. Frontend `dist/` Committed to Git?
 
 **Q:** Is `frontend/dist/` committed to Git?
 
-**A (after investigation):** **No, it is NOT committed.** I checked and:
-- `.gitignore` already has `frontend/dist/` on line 57
-- `git ls-files frontend/dist/` returns nothing (no tracked files)
+**A:** **No, it is NOT committed.** The `.gitignore` has `frontend/dist/` listed, so it's not tracked. The folder exists locally from `npm run build` but is excluded from Git.
 
 The `dist/` folder exists locally on your machine because you ran `npm run build` at some point, but it's correctly excluded from Git. **No problem here.**
 
 ---
 
-### 10. CORS Set to `"*"`
+### 9. CORS Set to `"*"`
 
 **Q:** Is `allow_origins=["*"]` in [main.py](file:///home/rafi/Workspace/Projects/cse226_project/project1_antigravity/backend/main.py) (line 11) a problem?
 

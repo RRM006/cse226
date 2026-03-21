@@ -2,10 +2,10 @@
 # MCP server control script
 #
 # Usage:
-#   mcp local      - Start MCP server in offline mode (local Phase 1 engine)
+#   mcp local       - Start MCP server in offline mode (local Phase 1 engine)
 #   mcp local remote - Start MCP server in remote mode (Railway backend)
-#   mcp stop      - Stop MCP server
-#   mcp status    - Check if MCP server is running
+#   mcp stop        - Stop MCP server
+#   mcp status      - Check if MCP server is running
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
@@ -29,35 +29,42 @@ print_success() {
 
 show_usage() {
     echo "Usage:"
-    echo "  mcp local      - Start MCP server (offline mode)"
+    echo "  mcp local        - Start MCP server (offline mode)"
     echo "  mcp local remote - Start MCP server (remote mode)"
-    echo "  mcp stop      - Stop MCP server"
-    echo "  mcp status    - Check MCP server status"
+    echo "  mcp stop         - Stop MCP server"
+    echo "  mcp status       - Check MCP server status"
 }
 
 get_mcp_pid() {
     ps aux | grep "python.*mcp_server.py" | grep -v grep | awk '{print $2}' | head -1
 }
 
+find_python() {
+    if [ -x "$SCRIPT_DIR/../.venv/bin/python" ]; then
+        echo "$SCRIPT_DIR/../.venv/bin/python"
+    else
+        echo "python"
+    fi
+}
+
 case "${1:-}" in
     local)
         MODE="${2:-offline}"
         
-        # Check if already running
         PID=$(get_mcp_pid)
         if [ -n "$PID" ]; then
             print_info "MCP server is already running (PID: $PID)"
             exit 0
         fi
         
-        # Run via mcprun
         print_info "Starting MCP server in $MODE mode..."
         cd "$PROJECT_ROOT"
         
+        PYTHON=$(find_python)
         if [ "$MODE" = "remote" ]; then
-            ./mcprun remote
+            exec "$PYTHON" "$PROJECT_ROOT/mcp_server.py" --remote
         else
-            ./mcprun offline
+            exec "$PYTHON" "$PROJECT_ROOT/mcp_server.py"
         fi
         ;;
     

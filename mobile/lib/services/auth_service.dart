@@ -9,9 +9,14 @@ class AuthService {
   SupabaseClient? _supabaseClient;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  static const String _supabaseUrl = 'https://zxzcnpkfabiiecagczao.supabase.co';
-  static const String _supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4emNucGtmYWJpaWVjYWdjemFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDExNDMsImV4cCI6MjA4ODM3NzE0M30.0Qo8IT6gBIOF3YMlHZm4dnh47lMUW5QesD_f3EVf9tM';
+  static const String _supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://your-project.supabase.co',
+  );
+  static const String _supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'your_anon_key',
+  );
 
   SupabaseClient get _client {
     if (_supabaseClient == null) {
@@ -31,7 +36,7 @@ class AuthService {
   Future<bool> signInWithGoogle() async {
     final result = await _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'https://zxzcnpkfabiiecagczao.supabase.co/auth/v1/callback',
+      redirectTo: 'https://your-project.supabase.co/auth/v1/callback',
     );
     return result;
   }

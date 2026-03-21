@@ -8,6 +8,14 @@ import cv2
 import easyocr
 import numpy as np
 
+_easyocr_reader = None
+
+def _get_ocr_reader():
+    global _easyocr_reader
+    if _easyocr_reader is None:
+        _easyocr_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+    return _easyocr_reader
+
 VALID_GRADES = {'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F', 'W', 'I', 'X'}
 # Lenient pattern to catch OCR mistakes like MAT I16, CSE 2I5
 COURSE_CODE_PATTERN = re.compile(r'^[A-Z]{2,4}\s*[\dIOlSZ]{2,4}$')
@@ -56,7 +64,7 @@ def get_text_center(box):
 async def process_ocr(image_bytes: bytes) -> OCRResult:
     preprocessed = preprocess_image(image_bytes)
     
-    reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+    reader = _get_ocr_reader()
     results = reader.readtext(preprocessed)
     
     processed_results = []

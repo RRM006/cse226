@@ -690,13 +690,6 @@ locust -f tests/locustfile.py --headless -u 20 -r 4 --run-time 60s \
 ## Documentation
 
 Additional documentation available in the `docs/` folder:
-
-- `docs/phase2_prd2.md` - Product Requirements Document
-- `docs/phase2_prompts.md` - Development Prompts
-- `docs/tracking2.md` - Project Progress Tracker
-- `docs/testing_plan2.md` - Test Cases
-- `docs/assumptions2.md` - Technical Assumptions
-
 ---
 
 ## License

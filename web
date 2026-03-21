@@ -1,39 +1,19 @@
 #!/bin/bash
-# Run backend, frontend, and optionally MCP for local development
+# NSU Audit Core - Interactive Web Launcher
 #
 # Usage:
-#   ./web              - Run backend + frontend only
-#   ./web local        - Run backend + frontend + MCP (offline mode)
-#   ./web local remote - Run backend + frontend + MCP (remote mode)
+#   ./web              - Interactive menu (recommended)
+#
+# Note: The old positional-argument interface (./web local, ./web local remote)
+# is now handled by the interactive menu inside web_launcher.py.
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Detect Python executable (use venv if available)
 if [ -d "$SCRIPT_DIR/.venv" ]; then
     PYTHON="$SCRIPT_DIR/.venv/bin/python"
-    # npm is usually system-wide, prefer system npm over venv npm
-    if [ -x "$SCRIPT_DIR/.venv/bin/npm" ]; then
-        NPM="$SCRIPT_DIR/.venv/bin/npm"
-    else
-        NPM="npm"
-    fi
 else
     PYTHON="python"
-    NPM="npm"
 fi
 
-# Parse arguments
-MCP_FLAG=""
-MCP_MODE="offline"
-
-if [ "$1" = "local" ]; then
-    MCP_FLAG="--mcp"
-    if [ "$2" = "remote" ]; then
-        MCP_MODE="remote"
-    fi
-    MCP_FLAG="$MCP_FLAG --mcp-mode $MCP_MODE"
-fi
-
-# Run the CLI web command
-$PYTHON "$SCRIPT_DIR/cli/audit_cli.py" web "$NPM" $MCP_FLAG
+exec "$PYTHON" "$SCRIPT_DIR/web_launcher.py"

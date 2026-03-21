@@ -1,6 +1,5 @@
 import os
 import sys
-from pathlib import Path
 
 try:
     from rich.console import Console
@@ -13,15 +12,6 @@ except ImportError:
     RICH_AVAILABLE = False
 
 console = Console()
-
-def rich_available() -> bool:
-    if not RICH_AVAILABLE:
-        return False
-    try:
-        console.print("[cyan]Rich library loaded successfully[/cyan]")
-        return True
-    except Exception:
-        return False
 
 def print_title(text: str):
     if RICH_AVAILABLE:
