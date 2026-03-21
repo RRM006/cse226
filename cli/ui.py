@@ -80,21 +80,21 @@ def prompt_input(message: str, default: str = None) -> str:
         try:
             return Prompt.ask(f"[blue]{message}[/blue]").strip()
         except (EOFError, KeyboardInterrupt):
-            return ""
+            raise KeyboardInterrupt
     else:
         try:
             suffix = f" [{default}]" if default else ""
             response = input(f"➤ {message}{suffix}: ").strip()
             return response if response else (default or "")
         except (EOFError, KeyboardInterrupt):
-            return ""
+            raise KeyboardInterrupt
 
 def prompt_yes_no(message: str, default: bool = True) -> bool:
     if RICH_AVAILABLE:
         try:
             return Confirm.ask(f"[blue]{message}[/blue]", default=default)
         except (EOFError, KeyboardInterrupt):
-            return False
+            raise KeyboardInterrupt
     else:
         suffix = "[Y/n]" if default else "[y/N]"
         try:
@@ -103,19 +103,21 @@ def prompt_yes_no(message: str, default: bool = True) -> bool:
                 return default
             return response in ('y', 'yes')
         except (EOFError, KeyboardInterrupt):
-            return False
+            raise KeyboardInterrupt
 
 def prompt_choice(message: str, choices: list) -> int:
     if RICH_AVAILABLE:
         try:
+            for i, choice in enumerate(choices, 1):
+                console.print(f"  [cyan]{i}.[/cyan] {choice}")
             choice_map = {str(i+1): i for i in range(len(choices))}
             while True:
-                choice = Prompt.ask(f"[blue]{message}[/blue]", choices=list(choice_map.keys()))
+                choice = Prompt.ask(f"[bold blue]{message}[/bold blue]", choices=list(choice_map.keys()))
                 if choice in choice_map:
                     return choice_map[choice]
                 print_warning("Invalid choice. Please try again.")
         except (EOFError, KeyboardInterrupt):
-            return -1
+            raise KeyboardInterrupt
     else:
         for i, choice in enumerate(choices, 1):
             print(f"  {i}. {choice}")
@@ -132,7 +134,7 @@ def prompt_choice(message: str, choices: list) -> int:
                     pass
                 print("Invalid choice. Please try again.")
             except (EOFError, KeyboardInterrupt):
-                return -1
+                raise KeyboardInterrupt
 
 def with_spinner(message: str, func, *args, **kwargs):
     if RICH_AVAILABLE:

@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "archive"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 
 from cli.ui import (
     console,
@@ -354,8 +355,8 @@ def require_login() -> bool:
     return True
 
 
-def get_csv_path(prompt_msg: str = "Enter CSV file path") -> str | None:
-    """Prompt for CSV path with validation and re-prompt on invalid input."""
+def get_csv_path(prompt_msg: str = "Enter CSV or OCR file path") -> str | None:
+    """Prompt for CSV or image path with validation and re-prompt on invalid input."""
     while True:
         csv_path = prompt_input(prompt_msg)
         if not csv_path:
@@ -476,15 +477,19 @@ def cmd_audit(level: int, csv_path: str = None, program: str = None, remote: boo
         print_error(f"File not found: {csv_file}")
         return False
 
+    ext = csv_file.suffix.lower()
+    if ext in ['.png', '.jpg', '.jpeg', '.pdf']:
+        return cmd_ocr(file_path=str(csv_file), program=program, audit_level=level, remote=remote)
+
     prog = program
     if not prog:
-        if level == 3:
-            try:
-                from src.level3_audit_engine import parse_transcript
-                _, prog, _ = parse_transcript(csv_path)
+        try:
+            from src.level3_audit_engine import parse_transcript
+            _, prog, _ = parse_transcript(csv_path)
+            if prog:
                 print_info(f"Detected program: {prog}")
-            except Exception:
-                pass
+        except Exception:
+            pass
 
         if not prog:
             prog = get_program()
@@ -555,17 +560,12 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None,
 
     print_info(f"Processing: {file_path_obj.name}")
 
-    if not program:
-        program = get_program()
-        if not program:
-            return False
-
     if audit_level is None:
         audit_level = get_audit_level()
         if audit_level is None:
             return False
 
-    print_info(f"Running {audit_level} audit for {program}...")
+    print_info(f"Running OCR processing...")
 
     try:
         import asyncio
@@ -593,8 +593,26 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None,
                 print_error("No course data could be extracted from the image")
                 return None, None
 
+            # Auto-detect program from OCR result
+            prog = program
+            if not prog:
+                try:
+                    from src.level3_audit_engine import parse_transcript
+                    _, prog, _ = parse_transcript(ocr_result.csv_text)
+                    if prog:
+                        print_info(f"Detected program: {prog}")
+                except Exception:
+                    pass
+                
+                if not prog:
+                    prog = get_program()
+                    if not prog:
+                        return None, None
+
+            print_info(f"Running {audit_level} audit for {prog}...")
+
             project_root = Path(__file__).parent.parent
-            knowledge_file = str(project_root / "program_knowledge" / f"program_knowledge_{program}.md")
+            knowledge_file = str(project_root / "program_knowledge" / f"program_knowledge_{prog}.md")
 
             if audit_level == 3:
                 knowledge_file_path = Path(knowledge_file)
@@ -604,15 +622,23 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None,
 
             audit_result = await run_audit(
                 csv_text=ocr_result.csv_text,
-                program=program,
+                program=prog,
                 audit_level=audit_level,
                 waivers=[],
                 knowledge_file=knowledge_file if audit_level == 3 else ""
             )
 
-            return ocr_result, audit_result
+            # Keep prog in audit_result for printing
+            if 'result_json' in audit_result and 'program' not in audit_result['result_json']:
+                audit_result['result_json']['program'] = prog
 
-        ocr_result, audit_result = asyncio.run(run_ocr_audit())
+            return ocr_result, audit_result, prog
+
+        res = asyncio.run(run_ocr_audit())
+        if not res or res[1] is None:
+            return False
+            
+        ocr_result, audit_result, final_prog = res
 
         if audit_result is None:
             return False
@@ -804,6 +830,7 @@ def interactive_menu():
     options = [
         "Offline Mode",
         "Remote Mode",
+        "History",
         "Login",
         "Logout",
         "Help",
@@ -827,9 +854,15 @@ def interactive_menu():
 
         try:
             selected_idx = interactive_menu_prompt("=== MAIN MENU ===", subtitle, options)
-            choice = options[selected_idx]
-            clear_screen()
+        except (EOFError, KeyboardInterrupt):
+            print("\n")
+            print_info("Exiting...")
+            break
             
+        choice = options[selected_idx]
+        clear_screen()
+        
+        try:
             if choice == "Exit":
                 print_success("Goodbye!")
                 break
@@ -842,13 +875,20 @@ def interactive_menu():
                 cmd_logout()
                 pause()
                 
+            elif choice == "History":
+                cmd_history()
+                pause()
+                
             elif choice == "Login":
                 success = cmd_login()
                 if success:
                     pause()
                 else:
                     print_info("\nPress Enter to return to menu...")
-                    prompt_input("Press Enter to continue")
+                    try:
+                        prompt_input("Press Enter to continue")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
                     
             elif choice == "Offline Mode":
                 print_header("Offline Mode")
@@ -876,8 +916,7 @@ def interactive_menu():
 
         except (EOFError, KeyboardInterrupt):
             print("\n")
-            print_info("Exiting...")
-            break
+            print_warning("Operation cancelled.")
 
 
 def main():
