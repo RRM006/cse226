@@ -1,12 +1,15 @@
 import asyncio
 import json
+from pathlib import Path
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
+from mcp.server.streamable_http import StreamableHTTPServerTransport
 from mcp.types import Tool, TextContent
+import uvicorn
 
 from config import get_config
-from auth.google_oauth import get_drive_service
+from auth.google_oauth import get_drive_service, load_token
 from tools.drive_tools import list_drive_folder, get_transcript, search_drive
 from tools.audit_tools import run_audit
 from tools.email_tools import send_email
@@ -15,6 +18,25 @@ from tools.batch_tools import batch_audit_folder
 
 
 app = Server("nsu-audit")
+
+
+def check_token_status(token_path: Path) -> str:
+    """
+    Check if valid token exists.
+    
+    Returns:
+        'valid' - Token exists and is valid
+        'expired' - Token exists but expired, can refresh
+        'missing' - No token file or invalid
+    """
+    creds = load_token(token_path)
+    if not creds:
+        return 'missing'
+    if creds.valid:
+        return 'valid'
+    if creds.expired and creds.refresh_token:
+        return 'expired'
+    return 'missing'
 
 
 @app.list_tools()
@@ -311,7 +333,29 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
-async def run_server():
+async def initialize_auth():
+    """Initialize Google OAuth and return config."""
+    config = get_config()
+    
+    token_status = check_token_status(config['token_path'])
+    
+    if token_status == 'valid':
+        print("\nUsing existing Google OAuth token...")
+        get_drive_service(config['token_path'], config['credentials_path'], reauth=False)
+        print("Token validated successfully!")
+    elif token_status == 'expired':
+        print("\nToken expired, refreshing Google OAuth...")
+        get_drive_service(config['token_path'], config['credentials_path'], reauth=False)
+        print("Token refreshed successfully!")
+    else:
+        print("\nNo token found. Initializing Google OAuth (opening browser)...")
+        get_drive_service(config['token_path'], config['credentials_path'], config['reauth'])
+        print("Google authentication successful!")
+    
+    return config
+
+
+async def run_server_stdio():
     """Run the MCP server with stdio transport."""
     config = get_config()
     
@@ -320,13 +364,7 @@ async def run_server():
     print(f"  API URL: {config['api_url']}")
     print(f"  Token path: {config['token_path']}")
     
-    print("\nInitializing Google OAuth (opening browser for login)...")
-    get_drive_service(
-        config['token_path'],
-        config['credentials_path'],
-        config['reauth']
-    )
-    print("Google authentication successful!")
+    await initialize_auth()
     
     print("\nStarting MCP server (stdio transport)...")
     print("Server ready. Press Ctrl+C to stop.")
@@ -339,9 +377,84 @@ async def run_server():
         )
 
 
+class MCPSseServer(uvicorn.Server):
+    """Custom Uvicorn server for MCP SSE transport."""
+    
+    def install_signal_handlers(self):
+        pass
+
+
+async def run_server_http(host: str = "127.0.0.1", port: int = 8001):
+    """Run the MCP server with Streamable HTTP transport for remote clients."""
+    config = get_config()
+    
+    print(f"NSU Audit MCP Server starting...")
+    print(f"  Mode: Streamable HTTP (for opencode and remote clients)")
+    print(f"  Token path: {config['token_path']}")
+    
+    await initialize_auth()
+    
+    from starlette.applications import Starlette
+    from starlette.routing import Route, Mount
+    from starlette.responses import JSONResponse
+    
+    transport = StreamableHTTPServerTransport(
+        mcp_session_id=None,
+        is_json_response_enabled=True,
+    )
+    
+    async def handle_mcp(request):
+        await transport.handle_request(
+            request.scope,
+            request.receive,
+            request._send,
+        )
+    
+    async def homepage(request):
+        return JSONResponse({
+            "service": "NSU Audit MCP Server",
+            "status": "running",
+            "transport": "Streamable HTTP",
+            "endpoints": {
+                "mcp": "/mcp",
+                "health": "/health"
+            }
+        })
+    
+    async def health(request):
+        return JSONResponse({"status": "healthy"})
+    
+    starlette_app = Starlette(
+        routes=[
+            Route("/", homepage),
+            Route("/health", health),
+            Mount("/mcp", app=lambda scope, receive, send: transport.handle_request(scope, receive, send)),
+        ]
+    )
+    
+    config_uvicorn = uvicorn.Config(
+        starlette_app,
+        host=host,
+        port=port,
+        log_level="info",
+    )
+    server = MCPSseServer(config=config_uvicorn)
+    
+    print(f"\nMCP HTTP server running at http://{host}:{port}/mcp")
+    print(f"opencode can connect using: http://{host}:{port}/mcp")
+    print("Press Ctrl+C to stop.")
+    
+    await server.serve()
+
+
 def main():
     """Main entry point for the NSU Audit MCP server."""
-    asyncio.run(run_server())
+    config = get_config()
+    
+    if config['http']:
+        asyncio.run(run_server_http(port=config['http_port']))
+    else:
+        asyncio.run(run_server_stdio())
 
 
 if __name__ == "__main__":

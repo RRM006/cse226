@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from typing import Tuple
@@ -20,7 +21,15 @@ def load_token(token_path: Path) -> Credentials | None:
     
     try:
         with open(token_path, 'r') as f:
-            return Credentials.from_authorized_user_info(None, f.read())
+            token_data = json.load(f)
+        return Credentials(
+            token=token_data.get('token'),
+            refresh_token=token_data.get('refresh_token'),
+            token_uri=token_data.get('token_uri'),
+            client_id=token_data.get('client_id'),
+            client_secret=token_data.get('client_secret'),
+            scopes=token_data.get('scopes'),
+        )
     except Exception:
         return None
 

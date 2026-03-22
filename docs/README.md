@@ -393,7 +393,7 @@ nsu-audit-core/
 │   ├── credentials.json.example
 │   ├── history
 │   │   └── local_log.py
-│   ├── mcp_script
+
 │   ├── mcp_server.py
 │   ├── offline
 │   │   └── engine_bridge.py
@@ -407,7 +407,6 @@ nsu-audit-core/
 │       ├── drive_tools.py
 │       ├── email_tools.py
 │       └── history_tools.py
-├── mcprun
 ├── mobile                              # Flutter mobile application
 │   ├── analysis_options.yaml
 │   ├── lib

@@ -12,6 +12,10 @@ def get_config():
                         help='Force re-authentication with Google OAuth')
     parser.add_argument('--api-url', type=str, default=None,
                         help='API URL (overrides RAILWAY_API_URL or LOCAL_API_URL env var)')
+    parser.add_argument('--http', action='store_true', default=False,
+                        help='Use HTTP/SSE transport instead of stdio (for opencode remote connection)')
+    parser.add_argument('--http-port', type=int, default=8001,
+                        help='Port for HTTP transport (default: 8001)')
     args = parser.parse_args()
 
     base_dir = Path.home() / '.nsu_mcp'
@@ -35,6 +39,8 @@ def get_config():
         'remote': args.remote,
         'reauth': args.reauth,
         'api_url': api_url,
+        'http': args.http,
+        'http_port': args.http_port,
         'token_path': base_dir / 'token.json',
         'credentials_path': Path(__file__).parent / 'credentials.json',
         'history_path': base_dir / 'history.json',

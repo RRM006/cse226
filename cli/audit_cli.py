@@ -826,79 +826,17 @@ def interactive_menu():
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="NSU Audit Core CLI",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python cli/audit_cli.py                # Interactive menu
-  python cli/audit_cli.py login          # Login with NSU Google account
-  python cli/audit_cli.py logout         # Logout
-  python cli/audit_cli.py web            # Run both backend and frontend locally
-  python cli/audit_cli.py l1 data/test.csv BSCSE   # Run Level 1 audit
-  python cli/audit_cli.py l2 data/test.csv BSCSE   # Run Level 2 audit
-  python cli/audit_cli.py l3 data/test.csv BSCSE   # Run Level 3 audit
-  python cli/audit_cli.py l3 data/test.csv BSCSE --remote   # Run audit and save to history
-  python cli/audit_cli.py ocr image.png           # OCR + audit (prompts for level)
-  python cli/audit_cli.py ocr image.png BSEEE 3   # OCR + Level 3 audit
-  python cli/audit_cli.py history                 # View scan history
+    import sys
+    if len(sys.argv) > 1:
+        print_error("Error: Command-line arguments are no longer supported.")
+        print_info("Please simply run 'cli' (or 'python cli/audit_cli.py') without arguments to use the interactive menu.")
+        sys.exit(1)
 
-Note: Audit commands (l1, l2, l3) work offline. Use --remote to save results.
-        """,
-    )
-
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    subparsers.add_parser("login", help="Login with NSU Google account")
-    subparsers.add_parser("logout", help="Logout and clear credentials")
-    subparsers.add_parser("history", help="View your scan history")
-    subparsers.add_parser("help", help="Show help information")
-
-    l1_parser = subparsers.add_parser("l1", help="Run Level 1 audit (credit tally)")
-    l1_parser.add_argument("csv", nargs="?", help="Path to CSV file")
-    l1_parser.add_argument("program", nargs="?", help="Program (BSCSE, BSEEE, LLB)")
-    l1_parser.add_argument("--remote", action="store_true", help="Save result to history")
-
-    l2_parser = subparsers.add_parser("l2", help="Run Level 2 audit (CGPA calculation)")
-    l2_parser.add_argument("csv", nargs="?", help="Path to CSV file")
-    l2_parser.add_argument("program", nargs="?", help="Program (BSCSE, BSEEE, LLB)")
-    l2_parser.add_argument("--remote", action="store_true", help="Save result to history")
-
-    l3_parser = subparsers.add_parser("l3", help="Run Level 3 audit (full graduation check)")
-    l3_parser.add_argument("csv", nargs="?", help="Path to CSV file")
-    l3_parser.add_argument("program", nargs="?", help="Program (BSCSE, BSEEE, LLB)")
-    l3_parser.add_argument("--remote", action="store_true", help="Save result to history")
-
-    ocr_parser = subparsers.add_parser("ocr", help="Run OCR on image/PDF and then audit")
-    ocr_parser.add_argument("file", nargs="?", default=None, help="Path to image/PDF")
-    ocr_parser.add_argument("program", nargs="?", default=None, help="Program (BSCSE, BSEEE, LLB)")
-    ocr_parser.add_argument("level", nargs="?", type=int, default=None, help="Audit level (1, 2, or 3)")
-    ocr_parser.add_argument("--remote", action="store_true", help="Save result to history")
-
-
-    args = parser.parse_args()
-
-    if not args.command:
-        show_welcome()
+    show_welcome()
+    try:
         interactive_menu()
-        return
-
-    if args.command == "login":
-        cmd_login()
-    elif args.command == "logout":
-        cmd_logout()
-    elif args.command == "history":
-        cmd_history()
-    elif args.command == "help":
-        show_help()
-    elif args.command == "l1":
-        cmd_l1(args.csv, args.program, getattr(args, 'remote', False))
-    elif args.command == "l2":
-        cmd_l2(args.csv, args.program, getattr(args, 'remote', False))
-    elif args.command == "l3":
-        cmd_l3(args.csv, args.program, getattr(args, 'remote', False))
-    elif args.command == "ocr":
-        cmd_ocr(args.file, args.program, args.level, getattr(args, 'remote', False))
+    except KeyboardInterrupt:
+        print("\nOperation cancelled.")
 
 
 if __name__ == "__main__":
