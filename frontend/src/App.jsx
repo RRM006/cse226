@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase, onAuthStateChange } from './lib/supabase';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
@@ -8,19 +8,26 @@ import Result from './pages/Result';
 import History from './pages/History';
 import AdminPanel from './pages/AdminPanel';
 
-function App() {
+function AuthHandler() {
+  const navigate = useNavigate();
+  
   useEffect(() => {
-    const { data: { subscription } } = onAuthStateChange((event, session) => {
+    const { data: { subscription } } = onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        window.location.href = '/login';
+        navigate('/login');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
+  
+  return null;
+}
 
+function App() {
   return (
     <BrowserRouter>
+      <AuthHandler />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

@@ -5,30 +5,18 @@ Calculates weighted CGPA, handles retakes and waivers, determines academic stand
 Usage: python src/level2_cgpa_calculator.py <transcript.csv>
 """
 
-import csv
 import os
 import sys
 from collections import defaultdict
+from typing import Optional, List
 
-# ─────────────────────────────────────────────────────────────────────
-# CONSTANTS
-# ─────────────────────────────────────────────────────────────────────
-
-VALID_GRADES = {'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D'}
-INVALID_GRADE_LABELS = {
-    'F': 'FAILED',
-    'W': 'WITHDRAWN',
-    'I': 'INCOMPLETE',
-    'X': 'MARKED',
-}
-
-GRADE_POINTS = {
-    'A': 4.0, 'A-': 3.7,
-    'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-    'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-    'D+': 1.3, 'D': 1.0,
-    'F': 0.0, 'I': 0.0, 'W': 0.0, 'X': 0.0,
-}
+from .shared import (
+    VALID_GRADES,
+    GRADE_POINTS,
+    parse_transcript,
+    detect_program,
+    format_credits,
+)
 
 ACADEMIC_STANDING = [
     (3.80, 4.00, 'Summa Cum Laude'),
@@ -46,20 +34,17 @@ HONORS_MAP = {
     'Cum Laude': 'Cum Laude',
 }
 
-# Allowed waiver courses per program
 ALLOWED_WAIVERS = {
     'BSCSE': ['ENG102', 'MAT116'],
     'BSEEE': ['ENG102', 'MAT116'],
     'LLB': ['ENG102'],
 }
 
-# Course names for waiver display
 COURSE_NAMES = {
     'ENG102': 'Introduction to Composition',
     'MAT116': 'Pre-Calculus',
 }
 
-# Course credits for waiver display
 COURSE_CREDITS = {
     'ENG102': 3,
     'MAT116': 0,
@@ -73,74 +58,7 @@ PROGRAM_LABELS = {
 
 
 # ─────────────────────────────────────────────────────────────────────
-# PARSING
-# ─────────────────────────────────────────────────────────────────────
-
-def parse_transcript(csv_text):
-    """Parse a transcript CSV file. Returns (student_id, program, records)."""
-    student_id = 'Unknown'
-    program = None
-    records = []
-
-    lines = csv_text.strip().split('\n')
-    for line in lines:
-        line = line.strip()
-        if line.startswith('#'):
-            if 'Student:' in line:
-                student_id = line.split('Student:')[1].strip()
-            elif 'Program:' in line:
-                prog = line.split('Program:')[1].strip().upper()
-                if 'LLB' in prog or 'LAW' in prog:
-                    program = 'LLB'
-                elif 'BSEEE' in prog or 'EEE' in prog:
-                    program = 'BSEEE'
-                elif 'BSCSE' in prog or 'CSE' in prog:
-                    program = 'BSCSE'
-            continue
-        break
-
-    data_lines = [l for l in lines if not l.strip().startswith('#')]
-    reader = csv.DictReader(data_lines)
-    for row in reader:
-            code = row['course_code'].strip().upper()
-            name = row['course_name'].strip()
-            try:
-                credits = float(row['credits'].strip())
-            except ValueError:
-                credits = 0.0
-            grade = row['grade'].strip().upper()
-            semester = row['semester'].strip()
-            records.append({
-                'code': code,
-                'name': name,
-                'credits': credits,
-                'grade': grade,
-                'semester': semester,
-            })
-
-    if program is None:
-        program = detect_program(records)
-
-    return student_id, program, records
-
-
-def detect_program(records):
-    """Heuristically detect the program from course codes."""
-    codes = [r['code'] for r in records]
-    has_llb = any(c.startswith('LLB') for c in codes)
-    has_eee_major = any(c.startswith('EEE2') or c.startswith('EEE3') or c.startswith('EEE4') for c in codes)
-    has_cse_major = any(c.startswith('CSE2') or c.startswith('CSE3') or c.startswith('CSE4') for c in codes)
-
-    if has_llb:
-        return 'LLB'
-    elif has_eee_major and not has_cse_major:
-        return 'BSEEE'
-    else:
-        return 'BSCSE'
-
-
-# ─────────────────────────────────────────────────────────────────────
-# RETAKE & WAIVER LOGIC
+# RETAKE & WAIVER LOGIC (Level 2 specific - returns 2 values)
 # ─────────────────────────────────────────────────────────────────────
 
 def resolve_retakes(records):
@@ -174,9 +92,6 @@ def resolve_retakes(records):
             resolved[code] = best
 
     return resolved, retake_info
-
-
-# prompt_waivers removed for API compatibility
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -341,7 +256,7 @@ def print_output(student_id, program, filename, records, resolved, retake_info,
 # MAIN
 # ─────────────────────────────────────────────────────────────────────
 
-def run_level2(csv_text: str, program: str, waivers: list[str] = None) -> dict:
+def run_level2(csv_text: str, program: str, waivers: Optional[List[str]] = None) -> dict:
     import io
     import sys
     

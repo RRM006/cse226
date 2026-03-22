@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 const API_URL = import.meta.env.VITE_API_URL;
 if (!API_URL) {
-  throw new Error('Missing required environment variable: VITE_API_URL must be set in frontend/.env');
+  console.warn('VITE_API_URL not set - API calls may fail');
 }
 
 async function getAuthHeaders() {

@@ -12,7 +12,7 @@ class ApiService {
     'API_BASE_URL',
     defaultValue: 'https://nsu-audit-api.railway.app',
   );
-  
+
   String? _accessToken;
 
   void setAccessToken(String token) {
@@ -60,7 +60,7 @@ class ApiService {
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode == 200) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       return json.decode(response.body);
     } else {
       throw ApiException(
@@ -132,7 +132,7 @@ class ApiService {
     final uri = Uri.parse(
       '$_baseUrl/api/v1/history?limit=$limit&offset=$offset',
     );
-    
+
     final response = await http.get(uri, headers: _headers);
 
     if (response.statusCode == 200) {
@@ -147,7 +147,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> getScanById(String scanId) async {
     final uri = Uri.parse('$_baseUrl/api/v1/history/$scanId');
-    
+
     final response = await http.get(uri, headers: _headers);
 
     if (response.statusCode == 200) {
@@ -162,10 +162,10 @@ class ApiService {
 
   Future<void> deleteScan(String scanId) async {
     final uri = Uri.parse('$_baseUrl/api/v1/history/$scanId');
-    
+
     final response = await http.delete(uri, headers: _headers);
 
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.statusCode,
         response.body,
@@ -184,7 +184,7 @@ class ApiService {
     String studentId = '',
   }) async {
     final uri = Uri.parse('$_baseUrl/api/v1/audit/save');
-    
+
     final body = {
       'program': program,
       'input_type': inputType,
@@ -220,8 +220,7 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
 
-  ApiException(this.statusCode, String body) 
-      : message = _parseError(body);
+  ApiException(this.statusCode, String body) : message = _parseError(body);
 
   static String _parseError(String body) {
     try {

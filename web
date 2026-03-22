@@ -1,19 +1,6 @@
 #!/bin/bash
-# NSU Audit Core - Interactive Web Launcher
-#
-# Usage:
-#   ./web              - Interactive menu (recommended)
-#
-# Note: The old positional-argument interface (./web local, ./web local remote)
-# is now handled by the interactive menu inside web_launcher.py.
+# NSU Audit Core - Web Launcher
+# Usage: ./web
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Detect Python executable (use venv if available)
-if [ -d "$SCRIPT_DIR/.venv" ]; then
-    PYTHON="$SCRIPT_DIR/.venv/bin/python"
-else
-    PYTHON="python"
-fi
-
-exec "$PYTHON" "$SCRIPT_DIR/web_launcher.py"
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" || exit 1
+exec python web_launcher.py "$@"

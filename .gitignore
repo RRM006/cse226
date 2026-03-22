@@ -8,13 +8,8 @@ __pycache__/
 *.egg-info/
 build/
 dist/
-
-# =========================
-# Virtual Environment
-# =========================
+.venv/
 venv/
-mcp/venv/
-.env/
 
 # =========================
 # Environment Variables
@@ -22,16 +17,16 @@ mcp/venv/
 .env
 .env.local
 .env.*.local
+*.env
 
 # =========================
-# MCP & API Tokens (local)
-# =========================
-.nsu_mcp/
-
-# =========================
-# Logs
+# Logs & Temp
 # =========================
 *.log
+*.tmp
+.pytest_cache/
+.coverage
+htmlcov/
 
 # =========================
 # OS Files
@@ -44,15 +39,7 @@ Thumbs.db
 # =========================
 .vscode/
 .idea/
-
-# =========================
-# Test / temp
-# =========================
-test_outputs/
-*.tmp
-.pytest_cache/
-.coverage
-htmlcov/
+*.iml
 
 # =========================
 # Frontend
@@ -60,24 +47,8 @@ htmlcov/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+frontend/package-lock.json
 
-# =========================
-# EasyOCR Models (downloaded at runtime)
-# =========================
-easyocr/
-~/.EasyOCR/
-model_weights/
-
-# =========================
-# Documentation
-# =========================
-pickup_guide.md
-mcp/credentials.json
-
-# =========================
-# OpenCode MCP Config (local paths)
-# =========================
-opencode.json
 # =========================
 # Mobile / Flutter
 # =========================
@@ -85,8 +56,25 @@ mobile/build/
 mobile/.dart_tool/
 mobile/.env
 mobile/*.lock
+mobile/linux/flutter/*.so
+mobile/linux/flutter/ephemeral/
 
 # =========================
-# Python Virtual Environments
+# EasyOCR Model Weights
 # =========================
-.venv/
+easyocr/
+~/.EasyOCR/
+model_weights/
+
+# =========================
+# MCP / CLI Auth Tokens
+# =========================
+.nsu_mcp/
+mcp/credentials.json
+
+# =========================
+# Local Developer Tools
+# =========================
+.opencode/
+opencode.json
+pickup_guide.md

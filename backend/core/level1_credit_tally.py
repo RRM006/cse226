@@ -5,14 +5,20 @@ Reads a student transcript CSV and calculates total valid earned credits.
 Usage: python src/level1_credit_tally.py <transcript.csv>
 """
 
-import csv
 import os
 import sys
 from collections import defaultdict
+from typing import Optional, List
 
-# ─────────────────────────────────────────────────────────────────────
-# CONSTANTS
-# ─────────────────────────────────────────────────────────────────────
+from .shared import (
+    VALID_GRADES,
+    INVALID_GRADE_LABELS,
+    GRADE_POINTS,
+    parse_transcript,
+    detect_program,
+    resolve_retakes,
+    format_credits,
+)
 
 VALID_GRADES = {'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D'}
 INVALID_GRADE_LABELS = {
@@ -196,113 +202,8 @@ PROGRAM_LABELS = {
 
 
 # ─────────────────────────────────────────────────────────────────────
-# PARSING
-# ─────────────────────────────────────────────────────────────────────
-
-def parse_transcript(csv_text):
-    """Parse a transcript CSV file. Returns (student_id, program, records)."""
-    student_id = 'Unknown'
-    program = None
-    records = []
-
-    lines = csv_text.strip().split('\n')
-    for line in lines:
-        line = line.strip()
-        if line.startswith('#'):
-            if 'Student:' in line:
-                student_id = line.split('Student:')[1].strip()
-            elif 'Program:' in line:
-                prog = line.split('Program:')[1].strip().upper()
-                if 'LLB' in prog or 'LAW' in prog:
-                    program = 'LLB'
-                elif 'BSEEE' in prog or 'EEE' in prog:
-                    program = 'BSEEE'
-                elif 'BSCSE' in prog or 'CSE' in prog:
-                    program = 'BSCSE'
-            continue
-        break
-
-    data_lines = [l for l in lines if not l.strip().startswith('#')]
-    reader = csv.DictReader(data_lines)
-    for row in reader:
-            code = row['course_code'].strip().upper()
-            name = row['course_name'].strip()
-            try:
-                credits = float(row['credits'].strip())
-            except ValueError:
-                credits = 0.0
-            grade = row['grade'].strip().upper()
-            semester = row['semester'].strip()
-            records.append({
-                'code': code,
-                'name': name,
-                'credits': credits,
-                'grade': grade,
-                'semester': semester,
-            })
-
-    if program is None:
-        program = detect_program(records)
-
-    return student_id, program, records
-
-
-def detect_program(records):
-    """Heuristically detect the program from course codes."""
-    codes = [r['code'] for r in records]
-    has_llb = any(c.startswith('LLB') for c in codes)
-    has_eee_major = any(c.startswith('EEE2') or c.startswith('EEE3') or c.startswith('EEE4') for c in codes)
-    has_cse_major = any(c.startswith('CSE2') or c.startswith('CSE3') or c.startswith('CSE4') for c in codes)
-
-    if has_llb:
-        return 'LLB'
-    elif has_eee_major and not has_cse_major:
-        return 'BSEEE'
-    else:
-        return 'BSCSE'
-
-
-# ─────────────────────────────────────────────────────────────────────
 # CREDIT TALLY LOGIC
 # ─────────────────────────────────────────────────────────────────────
-
-def resolve_retakes(records):
-    """
-    Group records by course code. For courses with multiple attempts,
-    keep the best valid grade attempt for credit counting.
-    Returns (resolved_courses dict, retake_info dict, excluded list).
-    """
-    groups = defaultdict(list)
-    for r in records:
-        groups[r['code']].append(r)
-
-    resolved = {}
-    retake_info = {}
-    excluded = []
-
-    for code, attempts in groups.items():
-        if len(attempts) > 1:
-            retake_info[code] = attempts
-
-        best = None
-        best_points = -1
-        for attempt in attempts:
-            grade = attempt['grade']
-            if grade in VALID_GRADES:
-                pts = GRADE_POINTS.get(grade, 0)
-                if pts > best_points:
-                    best = attempt
-                    best_points = pts
-
-        if best is not None:
-            resolved[code] = best
-        # Collect all invalid-grade attempts for display
-        for attempt in attempts:
-            if attempt['grade'] in INVALID_GRADE_LABELS:
-                excluded.append((attempt, INVALID_GRADE_LABELS[attempt['grade']]))
-
-    return resolved, retake_info, excluded
-
 
 def compute_category_credits(resolved, program):
     """
@@ -365,11 +266,6 @@ def compute_category_credits(resolved, program):
 # ─────────────────────────────────────────────────────────────────────
 # OUTPUT
 # ─────────────────────────────────────────────────────────────────────
-
-def format_credits(val):
-    """Format credit value: integer if whole, else float."""
-    return int(val) if val == int(val) else val
-
 
 def print_output(student_id, program, filename, records, resolved, retake_info, excluded, category_results):
     """Print the Level 1 output in the exact box-drawing format."""
@@ -476,7 +372,7 @@ def _print_llb_categories(category_results):
 # MAIN
 # ─────────────────────────────────────────────────────────────────────
 
-def run_level1(csv_text: str, program: str, waivers: list[str] = None) -> dict:
+def run_level1(csv_text: str, program: str, waivers: Optional[List[str]] = None) -> dict:
     import io
     import sys
     

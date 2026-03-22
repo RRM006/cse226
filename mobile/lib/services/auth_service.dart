@@ -34,11 +34,11 @@ class AuthService {
   }
 
   Future<bool> signInWithGoogle() async {
-    final result = await _client.auth.signInWithOAuth(
+    await _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'https://your-project.supabase.co/auth/v1/callback',
+      redirectTo: '$_supabaseUrl/auth/v1/callback',
     );
-    return result;
+    return true;
   }
 
   Future<void> signOut() async {
