@@ -1,5 +1,7 @@
 import csv
 import io
+import logging
+import os
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -8,12 +10,58 @@ import cv2
 import easyocr
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Model cache directory
+# ---------------------------------------------------------------------------
+# Store downloaded EasyOCR models in a predictable, writable location so they
+# are reused across restarts (when a persistent volume is mounted) and are
+# never re-downloaded inside the same container lifetime.
+_MODEL_CACHE_DIR = os.environ.get(
+    "EASYOCR_MODEL_DIR",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".easyocr_models"),
+)
+
 _easyocr_reader = None
 
-def _get_ocr_reader():
+
+def _get_ocr_reader() -> easyocr.Reader:
+    """Return a process-level singleton EasyOCR reader.
+
+    Memory-optimisation notes
+    -------------------------
+    * ``gpu=False``      – avoids loading CUDA kernels / VRAM allocation.
+    * ``quantize=True``  – uses INT8 quantisation on the recognition network,
+                           cutting its memory footprint roughly in half with
+                           negligible accuracy loss on printed text.
+    * ``model_storage_directory`` – caches model weights to a known path so
+                           they are not re-downloaded on every cold start.
+    * ``verbose=False``  – suppresses EasyOCR's own stdout chatter.
+    * ``detector=True`` / ``recognizer=True`` are the defaults; listed here
+                           explicitly so future maintainers can toggle them.
+    """
     global _easyocr_reader
     if _easyocr_reader is None:
-        _easyocr_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+        os.makedirs(_MODEL_CACHE_DIR, exist_ok=True)
+        logger.info(
+            "Initialising EasyOCR reader (quantize=True, gpu=False). "
+            "Model cache: %s",
+            _MODEL_CACHE_DIR,
+        )
+        _easyocr_reader = easyocr.Reader(
+            lang_list=["en"],
+            gpu=False,
+            # INT8 quantisation halves recognition-model RAM usage
+            quantize=True,
+            # Persist weights so cold starts don't re-download ~200 MB
+            model_storage_directory=_MODEL_CACHE_DIR,
+            download_enabled=True,
+            detector=True,
+            recognizer=True,
+            verbose=False,
+        )
+        logger.info("EasyOCR reader ready.")
     return _easyocr_reader
 
 VALID_GRADES = {'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F', 'W', 'I', 'X'}
@@ -63,9 +111,14 @@ def get_text_center(box):
 
 async def process_ocr(image_bytes: bytes) -> OCRResult:
     preprocessed = preprocess_image(image_bytes)
-    
+
     reader = _get_ocr_reader()
-    results = reader.readtext(preprocessed)
+    logger.debug("Running EasyOCR readtext on preprocessed image.")
+    # batch_size=1  – process one text region at a time; avoids large
+    #                 intermediate tensor allocations when many regions exist.
+    # workers=0     – disable multiprocessing DataLoader workers; each worker
+    #                 forks the process and duplicates model weights in RAM.
+    results = reader.readtext(preprocessed, batch_size=1, workers=0)
     
     processed_results = []
     for box, text, conf in results:
