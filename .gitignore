@@ -65,6 +65,7 @@ mobile/linux/flutter/ephemeral/
 easyocr/
 ~/.EasyOCR/
 model_weights/
+backend/services/.easyocr_models/
 
 # =========================
 # MCP / CLI Auth Tokens
