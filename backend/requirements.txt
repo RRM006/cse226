@@ -6,6 +6,11 @@ uvicorn[standard]
 supabase
 python-multipart
 
+# Explicit core numeric dependency — required by easyocr, opencv, and torch.
+# Declaring it here ensures pip installs it before the packages that need it,
+# preventing "Numpy is not available" errors in constrained environments.
+numpy
+
 # OCR - CPU-only slim builds to minimise image size and runtime memory.
 # Pinning to the +cpu variants ensures pip never pulls the full CUDA wheels
 # (~2 GB each) even when the PyPI index is consulted first.
