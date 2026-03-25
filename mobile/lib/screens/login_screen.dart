@@ -4,10 +4,14 @@ import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
-  
+  final String? errorMessage;
+  final VoidCallback? onClearError;
+
   const LoginScreen({
     super.key,
     required this.onLoginSuccess,
+    this.errorMessage,
+    this.onClearError,
   });
 
   @override
@@ -22,6 +26,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _checkExistingSession();
+    if (widget.errorMessage != null) {
+      _errorMessage = widget.errorMessage;
+    }
   }
 
   void _checkExistingSession() {

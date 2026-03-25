@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 
 export function FileUpload({ 
   onFileChange, 
-  accept = '.csv,.png,.jpg,.jpeg',
+  accept = '.csv,.png,.jpg,.jpeg,.pdf',
   error 
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -57,6 +57,9 @@ export function FileUpload({
     if (['png', 'jpg', 'jpeg'].includes(ext)) {
       return <Image className="w-10 h-10 text-blue-500" />;
     }
+    if (ext === 'pdf') {
+      return <FileText className="w-10 h-10 text-red-500" />;
+    }
     return <FileText className="w-10 h-10 text-green-500" />;
   };
 
@@ -108,7 +111,7 @@ export function FileUpload({
               Drop your file here or click to browse
             </p>
             <p className="text-sm text-slate-400">
-              Supports CSV, PNG, JPG (max 10MB)
+              Supports CSV, PNG, JPG, PDF (max 10MB)
             </p>
           </div>
         )}

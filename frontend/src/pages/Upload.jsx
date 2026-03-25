@@ -53,9 +53,10 @@ export default function Upload() {
                       file.name.endsWith('.jpg') || 
                       file.name.endsWith('.jpeg');
       const isCSV = file.name.endsWith('.csv');
+      const isPDF = file.name.endsWith('.pdf');
       
-      if (!isImage && !isCSV) {
-        throw new Error('Please upload a CSV or image file (PNG, JPG)');
+      if (!isImage && !isCSV && !isPDF) {
+        throw new Error('Please upload a CSV, image (PNG, JPG), or PDF file');
       }
 
       const waiverList = waivers.split(',').map(w => w.trim()).filter(w => w);

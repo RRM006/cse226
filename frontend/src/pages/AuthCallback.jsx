@@ -18,6 +18,12 @@ function AuthCallback() {
         }
 
         if (data.session) {
+          const email = data.session.user?.email;
+          if (!email || !email.toLowerCase().endsWith('@northsouth.edu')) {
+            await supabase.auth.signOut();
+            setError('Only @northsouth.edu accounts are allowed. Please sign in with your NSU email.');
+            return;
+          }
           console.log('Session found:', data.session);
           navigate('/upload');
         } else {
@@ -28,7 +34,7 @@ function AuthCallback() {
           const refreshToken = hashParams.get('refresh_token');
           
           if (accessToken && refreshToken) {
-            const { error: setSessionError } = await supabase.auth.setSession({
+            const { data: sessionData, error: setSessionError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken
             });
@@ -36,6 +42,13 @@ function AuthCallback() {
             if (setSessionError) {
               console.error('Set session error:', setSessionError);
               setError(setSessionError.message);
+              return;
+            }
+
+            const email = sessionData?.user?.email;
+            if (!email || !email.toLowerCase().endsWith('@northsouth.edu')) {
+              await supabase.auth.signOut();
+              setError('Only @northsouth.edu accounts are allowed. Please sign in with your NSU email.');
               return;
             }
             

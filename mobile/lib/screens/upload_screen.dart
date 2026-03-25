@@ -8,7 +8,7 @@ import '../services/auth_service.dart';
 class UploadScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onResult;
   final VoidCallback onLogout;
-  
+
   const UploadScreen({
     super.key,
     required this.onResult,
@@ -88,6 +88,27 @@ class _UploadScreenState extends State<UploadScreen> {
     }
   }
 
+  Future<void> _pickPdfFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _selectedFile = File(result.files.single.path!);
+          _inputType = 'ocr';
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to pick PDF: ${e.toString()}';
+      });
+    }
+  }
+
   Future<void> _submitAudit() async {
     if (_selectedFile == null) {
       setState(() {
@@ -104,11 +125,11 @@ class _UploadScreenState extends State<UploadScreen> {
     try {
       final apiService = ApiService();
       final authService = AuthService();
-      
+
       apiService.setAccessToken(authService.getAccessToken()!);
 
       Map<String, dynamic> result;
-      
+
       if (_inputType == 'csv') {
         result = await apiService.uploadCsv(
           file: _selectedFile!,
@@ -127,6 +148,10 @@ class _UploadScreenState extends State<UploadScreen> {
 
       widget.onResult(result);
     } catch (e) {
+      if (e is ApiException && e.statusCode == 403) {
+        widget.onLogout();
+        return;
+      }
       setState(() {
         _errorMessage = e.toString();
         _isUploading = false;
@@ -162,16 +187,19 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Input Type Selection
             const Text(
               'Input Type',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Expanded(
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 64) / 2,
                   child: _InputTypeButton(
                     label: 'CSV File',
                     icon: Icons.description,
@@ -179,27 +207,39 @@ class _UploadScreenState extends State<UploadScreen> {
                     onTap: _pickCsvFile,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 64) / 2,
                   child: _InputTypeButton(
                     label: 'Camera',
                     icon: Icons.camera_alt,
-                    isSelected: _inputType == 'ocr' && _selectedFile?.path.contains('.jpg') == true,
+                    isSelected: _inputType == 'ocr' &&
+                        _selectedFile?.path.contains('.jpg') == true,
                     onTap: _pickImageFromCamera,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 64) / 2,
                   child: _InputTypeButton(
                     label: 'Gallery',
                     icon: Icons.photo_library,
-                    isSelected: _inputType == 'ocr' && _selectedFile?.path.contains('.png') == true,
+                    isSelected: _inputType == 'ocr' &&
+                        _selectedFile?.path.contains('.png') == true,
                     onTap: _pickImageFromGallery,
+                  ),
+                ),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 64) / 2,
+                  child: _InputTypeButton(
+                    label: 'PDF',
+                    icon: Icons.picture_as_pdf,
+                    isSelected: _inputType == 'ocr' &&
+                        _selectedFile?.path.contains('.pdf') == true,
+                    onTap: _pickPdfFile,
                   ),
                 ),
               ],
             ),
-            
+
             // Selected File Display
             if (_selectedFile != null) ...[
               const SizedBox(height: 16),
@@ -225,9 +265,9 @@ class _UploadScreenState extends State<UploadScreen> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 24),
-            
+
             // Program Selection
             const Text(
               'Program',
@@ -236,10 +276,12 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _selectedProgram,
-              items: _programs.map((p) => DropdownMenuItem(
-                value: p,
-                child: Text(p),
-              )).toList(),
+              items: _programs
+                  .map((p) => DropdownMenuItem(
+                        value: p,
+                        child: Text(p),
+                      ))
+                  .toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedProgram = value!;
@@ -249,9 +291,9 @@ class _UploadScreenState extends State<UploadScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Audit Level Selection
             const Text(
               'Audit Level',
@@ -260,10 +302,12 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<int>(
               value: _selectedLevel,
-              items: _levels.map((l) => DropdownMenuItem(
-                value: l,
-                child: Text('Level $l'),
-              )).toList(),
+              items: _levels
+                  .map((l) => DropdownMenuItem(
+                        value: l,
+                        child: Text('Level $l'),
+                      ))
+                  .toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedLevel = value!;
@@ -273,9 +317,9 @@ class _UploadScreenState extends State<UploadScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Waivers
             const Text(
               'Waivers (comma-separated)',
@@ -292,9 +336,9 @@ class _UploadScreenState extends State<UploadScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Error Message
             if (_errorMessage != null) ...[
               Container(
@@ -310,7 +354,7 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Submit Button
             SizedBox(
               width: double.infinity,

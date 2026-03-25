@@ -43,6 +43,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _currentResult;
+  String? _authError;
 
   @override
   void initState() {
@@ -50,8 +51,22 @@ class _AuthWrapperState extends State<AuthWrapper> {
     _checkAuth();
   }
 
+  bool _isNsuEmail(String? email) {
+    return email != null && email.toLowerCase().endsWith('@northsouth.edu');
+  }
+
   void _checkAuth() {
     if (_authService.isLoggedIn()) {
+      final session = _authService.getCurrentSession();
+      final email = session?.user.email;
+
+      if (!_isNsuEmail(email)) {
+        _authError =
+            'Only @northsouth.edu accounts are allowed. Please sign in with your NSU email.';
+        _onLogout();
+        return;
+      }
+
       final token = _authService.getAccessToken();
       if (token != null) {
         ApiService().setAccessToken(token);
@@ -60,12 +75,27 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
-  void _onLoginSuccess() {
+  void _onLoginSuccess() async {
+    final session = _authService.getCurrentSession();
+    final email = session?.user.email;
+
+    if (!_isNsuEmail(email)) {
+      await _authService.signOut();
+      ApiService().clearAccessToken();
+      setState(() {
+        _authError =
+            'Only @northsouth.edu accounts are allowed. Please sign in with your NSU email.';
+      });
+      return;
+    }
+
     final token = _authService.getAccessToken();
     if (token != null) {
       ApiService().setAccessToken(token);
     }
-    setState(() {});
+    setState(() {
+      _authError = null;
+    });
   }
 
   void _onLogout() async {
@@ -89,7 +119,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (!_authService.isLoggedIn()) {
-      return LoginScreen(onLoginSuccess: _onLoginSuccess);
+      return LoginScreen(
+        onLoginSuccess: _onLoginSuccess,
+        errorMessage: _authError,
+        onClearError: () {
+          setState(() {
+            _authError = null;
+          });
+        },
+      );
     }
 
     if (_currentResult != null) {
