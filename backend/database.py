@@ -14,6 +14,20 @@ async def get_profile(user_id: str) -> dict:
     return response.data[0] if response.data else None
 
 
+async def create_profile(user_id: str, email: str, role: str = "admin") -> dict:
+    response = supabase.table("profiles").insert({
+        "id": user_id,
+        "email": email,
+        "role": role
+    }).execute()
+    return response.data[0] if response.data else None
+
+
+async def update_profile_role(user_id: str, role: str) -> dict:
+    response = supabase.table("profiles").update({"role": role}).eq("id", user_id).execute()
+    return response.data[0] if response.data else None
+
+
 async def create_scan(scan_data: dict) -> dict:
     response = supabase.table("scans").insert(scan_data).execute()
     return response.data[0] if response.data else None

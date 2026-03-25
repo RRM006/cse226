@@ -20,7 +20,7 @@ CREATE TABLE profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email       TEXT UNIQUE NOT NULL,
   full_name   TEXT,
-  role        TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
+  role        TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('student', 'admin')),
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -114,7 +114,7 @@ BEGIN
     NEW.id,
     COALESCE(NEW.email, ''),
     COALESCE(NEW.raw_user_meta_data->>'full_name', COALESCE(NEW.email, '')),
-    'student'
+    'admin'
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
@@ -128,3 +128,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- =====================
+-- MIGRATION: Update existing records to 'admin' role
+-- =====================
+-- Run this query if you have existing users with 'student' role:
+-- UPDATE profiles SET role = 'admin' WHERE role = 'student';

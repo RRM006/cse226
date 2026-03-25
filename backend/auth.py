@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from config import settings
-from database import get_profile
+from database import create_profile, get_profile, update_profile_role
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -62,7 +62,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
                 detail="Invalid token payload",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         if not email or not email.strip().lower().endswith("@northsouth.edu"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -79,9 +79,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
 
     profile = await get_profile(user_id)
     if not profile:
-        role = "student"
+        # Create profile with admin role for new users
+        profile = await create_profile(user_id, email, "admin")
+        role = "admin"
     else:
-        role = profile.get("role", "student")
+        role = profile.get("role", "admin")
+        # Ensure existing profiles have admin role
+        if role != "admin":
+            await update_profile_role(user_id, "admin")
+            role = "admin"
 
     return CurrentUser(id=user_id, email=email, role=role)
 
