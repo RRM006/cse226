@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from auth import get_current_user
 from routers import audit, history, users
+from routers import students, audit_results, requests
 
 app = FastAPI(title="NSU Audit Core API v2", version="2.0")
 
@@ -29,6 +30,9 @@ def health_check():
 app.include_router(audit.router)
 app.include_router(history.router)
 app.include_router(users.router)
+app.include_router(students.router)
+app.include_router(audit_results.router)
+app.include_router(requests.router)
 
 
 @app.get("/api/v1/me")

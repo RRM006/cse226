@@ -29,3 +29,4 @@ python-jose[cryptography]
 httpx
 pydantic-settings
 python-dotenv
+bcrypt

@@ -12,8 +12,8 @@ def get_config():
                         help='Force re-authentication with Google OAuth')
     parser.add_argument('--api-url', type=str, default=None,
                         help='API URL (overrides RAILWAY_API_URL or LOCAL_API_URL env var)')
-    parser.add_argument('--http', action='store_true', default=False,
-                        help='Use HTTP/SSE transport instead of stdio (for opencode remote connection)')
+    parser.add_argument('--http', action='store_true', default=True,
+                        help='Use HTTP transport (default: enabled for OpenCode compatibility)')
     parser.add_argument('--http-port', type=int, default=8001,
                         help='Port for HTTP transport (default: 8001)')
     args = parser.parse_args()

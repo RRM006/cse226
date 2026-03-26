@@ -406,25 +406,46 @@ def get_audit_level() -> int | None:
 def run_audit_offline(csv_path: str, level: int, program: str = None) -> bool:
     """Run audit using Phase 1 archive engine (offline mode)."""
     try:
-        if level == 1:
-            from src.level1_credit_tally import main as level_main
-            sys.argv = ["level1_credit_tally", csv_path]
-        elif level == 2:
-            from src.level2_cgpa_calculator import main as level_main
-            sys.argv = ["level2_cgpa_calculator", csv_path]
-        elif level == 3:
-            from src.level3_audit_engine import main as level_main, parse_transcript
-            prog = program
+        from backend.core.level1_credit_tally import run_level1
+        from backend.core.level2_cgpa_calculator import run_level2
+        from backend.core.level3_audit_engine import run_level3
+
+        with open(csv_path, 'r') as f:
+            csv_text = f.read()
+
+        prog = program
+        if not prog:
+            try:
+                from backend.core.level3_audit_engine import parse_transcript
+                _, prog, _ = parse_transcript(csv_text)
+            except Exception:
+                pass
             if not prog:
-                _, prog, _ = parse_transcript(csv_path)
+                prog = "BSCSE"
+
+        knowledge_content = ""
+        if level == 3:
             project_root = Path(__file__).parent.parent
             knowledge_path = project_root / "program_knowledge" / f"program_knowledge_{prog}.md"
-            sys.argv = ["level3_audit_engine", csv_path, str(knowledge_path)]
+            if knowledge_path.exists():
+                with open(knowledge_path, 'r') as f:
+                    knowledge_content = f.read()
+            else:
+                print_warning(f"Knowledge file not found: {knowledge_path}")
+
+        if level == 1:
+            result = run_level1(csv_text, prog, [])
+        elif level == 2:
+            result = run_level2(csv_text, prog, [])
+        elif level == 3:
+            result = run_level3(csv_text, prog, [], knowledge_content)
         else:
             print_error(f"Invalid audit level: {level}")
             return False
 
-        level_main()
+        print_divider()
+        print(result.get("result_text", ""))
+        print_divider()
         return True
     except Exception as e:
         print_error(f"Error running audit: {e}")
@@ -488,7 +509,7 @@ def cmd_audit(level: int, csv_path: str = None, program: str = None, remote: boo
     prog = program
     if not prog:
         try:
-            from src.level3_audit_engine import parse_transcript
+            from backend.core.level3_audit_engine import parse_transcript
             _, prog, _ = parse_transcript(csv_path)
             if prog:
                 print_info(f"Detected program: {prog}")
@@ -601,7 +622,7 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None,
             prog = program
             if not prog:
                 try:
-                    from src.level3_audit_engine import parse_transcript
+                    from backend.core.level3_audit_engine import parse_transcript
                     _, prog, _ = parse_transcript(ocr_result.csv_text)
                     if prog:
                         print_info(f"Detected program: {prog}")

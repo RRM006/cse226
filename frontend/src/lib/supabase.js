@@ -40,9 +40,14 @@ export const useAuth = () => {
     }
 
     const getInitialSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data);
-      setLoading(false);
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data);
+      } catch (err) {
+        console.error("useAuth getSession error:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getInitialSession();
@@ -66,4 +71,19 @@ export const useAuth = () => {
     getSession,
     onAuthStateChange
   };
+};
+
+// Student auth
+const STUDENT_TOKEN_KEY = 'student_token';
+
+export const getStudentToken = () => localStorage.getItem(STUDENT_TOKEN_KEY);
+
+export const setStudentToken = (token) => localStorage.setItem(STUDENT_TOKEN_KEY, token);
+
+export const clearStudentToken = () => localStorage.removeItem(STUDENT_TOKEN_KEY);
+
+export const isStudentLoggedIn = () => !!getStudentToken();
+
+export const studentSignOut = () => {
+  clearStudentToken();
 };

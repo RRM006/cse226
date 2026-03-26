@@ -1,20 +1,21 @@
 import asyncio
 import json
+import sys
 from pathlib import Path
 
 from mcp.server import Server
-from mcp.server.stdio import stdio_server
 from mcp.server.streamable_http import StreamableHTTPServerTransport
 from mcp.types import Tool, TextContent
 import uvicorn
 
 from config import get_config
 from auth.google_oauth import get_drive_service, load_token
-from tools.drive_tools import list_drive_folder, get_transcript, search_drive
+from tools.drive_tools import list_drive_folder, get_transcript, search_drive, list_mcp_folders
 from tools.audit_tools import run_audit
 from tools.email_tools import send_email
 from tools.history_tools import get_audit_history
 from tools.batch_tools import batch_audit_folder
+from tools.intent_parser import parse_audit_query, format_clarification_request, validate_parsed_query
 
 
 app = Server("nsu-audit")
@@ -63,6 +64,30 @@ async def list_tools() -> list[Tool]:
                     }
                 },
                 "required": ["folder_name"]
+            }
+        ),
+        Tool(
+            name="list_mcp_folders",
+            description="List all Google Drive folders that contain 'mcp' in their name. Use this to find available MCP transcript folders.",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="audit_from_query",
+            description="Run a graduation audit from natural language query. " +
+                        "Example: 'Run L3 audit on the mcptest folder for BSCSE' or 'Check if student can graduate'. " +
+                        "Automatically parses intent and orchestrates folder listing, file download, and audit execution.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language query (e.g., 'Run L3 audit on mcptest folder for BSCSE', 'Check transcript in mcp2.0')"
+                    }
+                },
+                "required": ["query"]
             }
         ),
         Tool(
@@ -269,6 +294,97 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = list_drive_folder(folder_name, file_types)
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
         
+        elif name == "list_mcp_folders":
+            result = list_mcp_folders()
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+        
+        elif name == "audit_from_query":
+            query = arguments.get("query", "")
+            
+            mcp_folders = list_mcp_folders()
+            available_folders = mcp_folders if isinstance(mcp_folders, list) else []
+            
+            parsed = parse_audit_query(query, available_folders)
+            
+            is_valid, error_msg = validate_parsed_query(parsed)
+            if not is_valid:
+                clarification = format_clarification_request(parsed)
+                response = {
+                    "status": "needs_clarification",
+                    "message": error_msg,
+                    "clarification_needed": clarification,
+                    "parsed_intent": parsed
+                }
+                return [TextContent(type="text", text=json.dumps(response, indent=2))]
+            
+            folder_name = parsed['folder_name']
+            program = parsed['program']
+            audit_level = parsed['audit_level']
+            file_name = parsed.get('file_name')
+            send_email_flag = parsed.get('send_email', False)
+            student_email = parsed.get('student_email')
+            waivers = parsed.get('waivers', [])
+            
+            files = list_drive_folder(folder_name, ['csv'])
+            
+            if isinstance(files, str):
+                return [TextContent(type="text", text=json.dumps({
+                    "status": "error",
+                    "message": files
+                }, indent=2))]
+            
+            if not files:
+                return [TextContent(type="text", text=json.dumps({
+                    "status": "error",
+                    "message": f"No CSV files found in folder '{folder_name}'"
+                }, indent=2))]
+            
+            target_file = None
+            if file_name:
+                for f in files:
+                    if file_name.lower() in f['file_name'].lower():
+                        target_file = f
+                        break
+                if not target_file:
+                    return [TextContent(type="text", text=json.dumps({
+                        "status": "error",
+                        "message": f"File '{file_name}' not found in folder '{folder_name}'. Available files: {[f['file_name'] for f in files]}"
+                    }, indent=2))]
+            else:
+                target_file = files[0]
+            
+            transcript_result = get_transcript(target_file['file_id'], target_file['file_name'])
+            
+            if isinstance(transcript_result, str):
+                return [TextContent(type="text", text=json.dumps({
+                    "status": "error",
+                    "message": f"Failed to download transcript: {transcript_result}"
+                }, indent=2))]
+            
+            csv_content = transcript_result.get('content', '')
+            if not csv_content:
+                return [TextContent(type="text", text=json.dumps({
+                    "status": "error",
+                    "message": "No content found in transcript file"
+                }, indent=2))]
+            
+            audit_result = run_audit(csv_content, program, audit_level, waivers, student_email)
+            
+            email_status = None
+            if send_email_flag and student_email:
+                email_resp = send_email(student_email, audit_result)
+                email_status = email_resp
+            
+            response = {
+                "status": "success",
+                "parsed_intent": parsed,
+                "file_audited": target_file['file_name'],
+                "audit_result": audit_result,
+                "email_sent": send_email_flag,
+                "email_status": email_status
+            }
+            return [TextContent(type="text", text=json.dumps(response, indent=2))]
+        
         elif name == "get_transcript":
             file_id = arguments.get("file_id", "")
             file_name = arguments.get("file_name") or None
@@ -356,25 +472,10 @@ async def initialize_auth():
 
 
 async def run_server_stdio():
-    """Run the MCP server with stdio transport."""
-    config = get_config()
-    
-    print(f"NSU Audit MCP Server starting...")
-    print(f"  Mode: {'Remote' if config['remote'] else 'Offline'}")
-    print(f"  API URL: {config['api_url']}")
-    print(f"  Token path: {config['token_path']}")
-    
-    await initialize_auth()
-    
-    print("\nStarting MCP server (stdio transport)...")
-    print("Server ready. Press Ctrl+C to stop.")
-    
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options()
-        )
+    """DEPRECATED: stdio transport has been removed. Use HTTP instead."""
+    print("ERROR: stdio transport is no longer supported.")
+    print("Please use HTTP transport: python mcp_server.py --http")
+    sys.exit(1)
 
 
 class MCPSseServer(uvicorn.Server):
@@ -397,11 +498,24 @@ async def run_server_http(host: str = "127.0.0.1", port: int = 8001):
     from starlette.applications import Starlette
     from starlette.routing import Route, Mount
     from starlette.responses import JSONResponse
+    import contextlib
+    import asyncio
     
     transport = StreamableHTTPServerTransport(
         mcp_session_id=None,
         is_json_response_enabled=True,
     )
+    
+    @contextlib.asynccontextmanager
+    async def lifespan(app_instance):
+        async with transport.connect() as (read_stream, write_stream):
+            task = asyncio.create_task(app.run(read_stream, write_stream, app.create_initialization_options()))
+            yield
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
     
     async def handle_mcp(request):
         await transport.handle_request(
@@ -429,7 +543,8 @@ async def run_server_http(host: str = "127.0.0.1", port: int = 8001):
             Route("/", homepage),
             Route("/health", health),
             Mount("/mcp", app=lambda scope, receive, send: transport.handle_request(scope, receive, send)),
-        ]
+        ],
+        lifespan=lifespan,
     )
     
     config_uvicorn = uvicorn.Config(
@@ -451,10 +566,7 @@ def main():
     """Main entry point for the NSU Audit MCP server."""
     config = get_config()
     
-    if config['http']:
-        asyncio.run(run_server_http(port=config['http_port']))
-    else:
-        asyncio.run(run_server_stdio())
+    asyncio.run(run_server_http(port=config['http_port']))
 
 
 if __name__ == "__main__":

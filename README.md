@@ -109,7 +109,7 @@ nsu-audit-core/
 
 ```bash
 cd backend
-python -m venv venv && source venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # Add your Supabase credentials to .env

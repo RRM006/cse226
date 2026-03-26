@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Users, Eye, Shield, X, ClipboardList } from 'lucide-react';
+import { Settings, Users, Eye, Shield, X, ClipboardList, FileText, AlertCircle } from 'lucide-react';
 import { getAllUsers, updateUserRole, getCurrentUser, getUserHistory } from '../lib/api';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
@@ -50,7 +50,7 @@ export default function AdminPanel() {
   async function handleRoleChange(userId, newRole) {
     try {
       await updateUserRole(userId, newRole);
-      setUsers(users.map(u => 
+      setUsers(users.map(u =>
         u.id === userId ? { ...u, role: newRole } : u
       ));
     } catch (err) {
@@ -119,6 +119,54 @@ export default function AdminPanel() {
               <p className="text-red-600">{error}</p>
             </Card>
           )}
+
+          {/* Quick Access Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card
+              className="cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-primary-200"
+              onClick={() => navigate('/admin/manage-students')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-800">Manage Students</h3>
+                  <p className="text-sm text-slate-500">Create and manage student accounts</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-primary-200"
+              onClick={() => navigate('/admin/audit-results')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-800">Audit Results</h3>
+                  <p className="text-sm text-slate-500">Record audit results for students</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-primary-200"
+              onClick={() => navigate('/admin/requests')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-800">Student Requests</h3>
+                  <p className="text-sm text-slate-500">Review student appeals and requests</p>
+                </div>
+              </div>
+            </Card>
+          </div>
 
           {/* Users Table */}
           <Card className="overflow-hidden p-0 shadow-xl">
@@ -229,7 +277,7 @@ export default function AdminPanel() {
                     <X className="w-5 h-5 text-slate-500" />
                   </button>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto max-h-[60vh]">
                   {loadingHistory ? (
                     <div className="flex items-center justify-center py-8">

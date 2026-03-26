@@ -38,8 +38,10 @@ def _try_import_deps():
     except ImportError:
         print("Installing required CLI dependencies (rich, questionary)...")
         try:
+            venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
+            python_bin = str(venv_python) if venv_python.exists() else sys.executable
             subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", "rich", "questionary", "-q"],
+                [python_bin, "-m", "pip", "install", "rich", "questionary", "-q"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -65,8 +67,24 @@ def _style():
 
 
 def is_port_in_use(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(("localhost", port)) == 0
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) == 0:
+                return True
+            if s.connect_ex(("localhost", port)) == 0:
+                return True
+    except Exception:
+        pass
+
+    if socket.has_ipv6:
+        try:
+            with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+                if s.connect_ex(("::1", port)) == 0:
+                    return True
+        except Exception:
+            pass
+            
+    return False
 
 
 def check_backend_health(url: str = "http://localhost:8000/health", timeout: int = 30) -> bool:
@@ -260,6 +278,16 @@ def wait_for_backend(timeout: int = 30) -> bool:
     return False
 
 
+def wait_for_frontend(timeout: int = 15) -> bool:
+    with console.status("[yellow]Waiting for frontend to be ready...[/yellow]"):
+        start = time.time()
+        while time.time() - start < timeout:
+            if is_port_in_use(5173):
+                return True
+            time.sleep(0.5)
+    return False
+
+
 def run_frontend() -> subprocess.Popen:
     console.print("[cyan]Starting frontend (Vite) on port 5173...[/cyan]")
     proc = subprocess.Popen(
@@ -273,20 +301,18 @@ def run_frontend() -> subprocess.Popen:
     return proc
 
 
-def run_mcp_server(mode: str = "offline", http: bool = False) -> subprocess.Popen:
-    """Start MCP server. mode: 'offline' (local) or 'remote' (Railway). http: use HTTP transport for opencode."""
+def run_mcp_server(mode: str = "offline", http: bool = True) -> subprocess.Popen:
+    """Start MCP server. mode: 'offline' (local) or 'remote' (Railway). http: always True now."""
     ensure_mcp_venv()
     mode_label = "local" if mode == "offline" else "Railway"
-    transport_label = "HTTP" if http else "stdio"
-    console.print(f"[cyan]Starting MCP server ({mode_label} backend, {transport_label} transport)...[/cyan]")
+    console.print(f"[cyan]Starting MCP server ({mode_label} backend, HTTP transport)...[/cyan]")
 
     python = str(MCP_VENV / "bin" / "python")
 
     args = [python, str(MCP_DIR / "mcp_server.py")]
     if mode == "remote":
         args.append("--remote")
-    if http:
-        args.extend(["--http", "--http-port", "8001"])
+    args.extend(["--http", "--http-port", "8001"])
 
     proc = subprocess.Popen(
         args,
@@ -348,62 +374,26 @@ def handle_deploy_services():
         choice = questionary.select(
             "Deploy Services:",
             choices=[
-                "1.1  Local Deploy (Backend + Frontend)",
-                "1.2  Local Deploy + MCP (Local Backend, stdio)",
-                "1.3  Local Deploy + MCP (Local Backend, HTTP for opencode)",
-                "1.4  Local Deploy + MCP (Railway Backend)",
-                "1.5  Local Deploy + MCP (Railway + HTTP for opencode)",
+                "1.1  Start Local Dev (Backend + Frontend + MCP)",
+                "1.2  Start Local with Railway MCP (Remote)",
+                "1.3  Start MCP Server Only (Local)",
+                "1.4  Backend + Frontend Only (No MCP)",
                 "Back to Main Menu",
             ],
             style=_style(),
         ).ask()
 
-        if choice == "1.1  Local Deploy (Backend + Frontend)":
-            do_deploy_local(include_frontend=True, include_mcp=False)
-            return
-        elif choice == "1.2  Local Deploy + MCP (Local Backend, stdio)":
-            do_deploy_local(include_frontend=True, include_mcp=True, mcp_mode="offline", mcp_http=False)
-            return
-        elif choice == "1.3  Local Deploy + MCP (Local Backend, HTTP for opencode)":
+        if choice == "1.1  Start Local Dev (Backend + Frontend + MCP)":
             do_deploy_local(include_frontend=True, include_mcp=True, mcp_mode="offline", mcp_http=True)
             return
-        elif choice == "1.4  Local Deploy + MCP (Railway Backend)":
-            do_deploy_local(include_frontend=True, include_mcp=True, mcp_mode="remote", mcp_http=False)
-            return
-        elif choice == "1.5  Local Deploy + MCP (Railway + HTTP for opencode)":
+        elif choice == "1.2  Start Local with Railway MCP (Remote)":
             do_deploy_local(include_frontend=True, include_mcp=True, mcp_mode="remote", mcp_http=True)
             return
-        elif choice == "Back to Main Menu" or choice is None:
-            return
-
-
-def handle_mcp_server_only():
-    """Submenu: MCP Server Only."""
-    while True:
-        console.print()
-        choice = questionary.select(
-            "MCP Server:",
-            choices=[
-                "2.1  Start MCP (Local Backend, stdio)",
-                "2.2  Start MCP (Local Backend, HTTP for opencode)",
-                "2.3  Start MCP (Railway Backend)",
-                "2.4  Start MCP (Railway + HTTP for opencode)",
-                "Back to Main Menu",
-            ],
-            style=_style(),
-        ).ask()
-
-        if choice == "2.1  Start MCP (Local Backend, stdio)":
-            do_mcp_only(mcp_mode="offline", http=False)
-            return
-        elif choice == "2.2  Start MCP (Local Backend, HTTP for opencode)":
+        elif choice == "1.3  Start MCP Server Only (Local)":
             do_mcp_only(mcp_mode="offline", http=True)
             return
-        elif choice == "2.3  Start MCP (Railway Backend)":
-            do_mcp_only(mcp_mode="remote", http=False)
-            return
-        elif choice == "2.4  Start MCP (Railway + HTTP for opencode)":
-            do_mcp_only(mcp_mode="remote", http=True)
+        elif choice == "1.4  Backend + Frontend Only (No MCP)":
+            do_deploy_local(include_frontend=True, include_mcp=False, mcp_mode="offline", mcp_http=False)
             return
         elif choice == "Back to Main Menu" or choice is None:
             return
@@ -416,42 +406,23 @@ def handle_service_management():
         choice = questionary.select(
             "Service Management:",
             choices=[
-                "3.1  Status Check",
-                "3.2  Stop MCP Server",
-                "3.3  Stop All Services",
+                "2.1  Status Check",
+                "2.2  Stop MCP Server",
+                "2.3  Stop All Services",
                 "Back to Main Menu",
             ],
             style=_style(),
         ).ask()
 
-        if choice == "3.1  Status Check":
+        if choice == "2.1  Status Check":
             clear_screen()
             print_banner()
             print_status_panel()
             console.print()
-        elif choice == "3.2  Stop MCP Server":
+        elif choice == "2.2  Stop MCP Server":
             do_stop_mcp()
-        elif choice == "3.3  Stop All Services":
+        elif choice == "2.3  Stop All Services":
             do_stop_all()
-        elif choice == "Back to Main Menu" or choice is None:
-            return
-
-
-def handle_account_auth():
-    """Submenu: Account & Auth."""
-    while True:
-        console.print()
-        choice = questionary.select(
-            "Account & Auth:",
-            choices=[
-                "4.1  Re-authenticate Google Account",
-                "Back to Main Menu",
-            ],
-            style=_style(),
-        ).ask()
-
-        if choice == "4.1  Re-authenticate Google Account":
-            do_reauth()
         elif choice == "Back to Main Menu" or choice is None:
             return
 
@@ -495,8 +466,10 @@ def do_deploy_local(include_frontend: bool = False, include_mcp: bool = False, m
                 console.print("[cyan]Frontend already running on port 5173, reusing existing instance...[/cyan]")
             else:
                 frontend_process = run_frontend()
-                time.sleep(2)
-                console.print("[bold green]Frontend ready at http://localhost:5173[/bold green]")
+                if not wait_for_frontend():
+                    console.print("[bold red]Frontend failed to start within 15 seconds.[/bold red]")
+                else:
+                    console.print("[bold green]Frontend ready at http://localhost:5173[/bold green]")
 
         if include_mcp:
             mcp_port = 8001 if mcp_http else None
@@ -556,7 +529,7 @@ def do_mcp_only(mcp_mode: str = "offline", http: bool = False):
     if http and is_port_in_use(8001):
         console.print("[cyan]MCP HTTP server already running on port 8001![/cyan]")
         console.print("[cyan]opencode can connect to http://localhost:8001/mcp[/cyan]")
-        console.print("[yellow]Press Enter to return to menu...[/cyan]")
+        console.print("[yellow]Press Enter to return to menu...[/yellow]")
         try:
             input()
         except KeyboardInterrupt:
@@ -621,6 +594,10 @@ def do_stop_all():
 
 def do_reauth():
     ensure_mcp_venv()
+    token_path = Path.home() / ".nsu_mcp" / "token.json"
+    if token_path.exists():
+        console.print("[cyan]Removing existing token...[/cyan]")
+        token_path.unlink()
     console.print("[cyan]Opening browser for Google re-authentication...[/cyan]")
     python = str(MCP_VENV / "bin" / "python")
     result = subprocess.run(
@@ -673,27 +650,24 @@ def main():
         choice = questionary.select(
             "Main Menu:",
             choices=[
-                "1. Deploy Services",
-                "2. MCP Server Only",
-                "3. Service Management",
-                "4. Account & Auth",
-                "5. Help",
-                "6. Exit",
+                "1. Start Local Development",
+                "2. Service Management",
+                "3. Re-authenticate Google Account",
+                "4. Help",
+                "5. Exit",
             ],
             style=_style(),
         ).ask()
 
-        if choice == "1. Deploy Services":
+        if choice == "1. Start Local Development":
             handle_deploy_services()
-        elif choice == "2. MCP Server Only":
-            handle_mcp_server_only()
-        elif choice == "3. Service Management":
+        elif choice == "2. Service Management":
             handle_service_management()
-        elif choice == "4. Account & Auth":
-            handle_account_auth()
-        elif choice == "5. Help":
+        elif choice == "3. Re-authenticate Google Account":
+            do_reauth()
+        elif choice == "4. Help":
             do_help()
-        elif choice == "6. Exit" or choice is None:
+        elif choice == "5. Exit" or choice is None:
             clear_screen()
             console.print("[yellow]Goodbye![/yellow]")
             break
@@ -704,52 +678,53 @@ def do_help():
     while True:
         clear_screen()
         
-        help_panel = f"""
+        help_panel = """
 [bold cyan]═══════════════════════════════════════════════════════════════════════[/bold cyan]
 [bold white]                              HELP & USE CASES[/bold white]
 [bold cyan]═══════════════════════════════════════════════════════════════════════[/bold cyan]
 
-[bold yellow]📌 DEPLOY SERVICES (Option 1)[/bold yellow]
+[bold yellow]📌 MENU STRUCTURE[/bold yellow]
 [dim]──────────────────────────────────────────────────────────────────────────────[/dim]
-┌────────┬────────────┬─────┬──────────┬────────────────────────────────────────────┐
-│ Option │ Backend    │ MCP │Transport │ Use Case                                   │
-├────────┼────────────┼─────┼──────────┼────────────────────────────────────────────┤
-│  1.1  │ Local      │ ❌  │    -     │ Web app only (no AI tools)                 │
-│  1.2  │ Local      │ ✅  │  stdio   │ MCP in launcher/CLI only                   │
-│  1.3  │ Local      │ ✅  │   HTTP   │ MCP + opencode integration [yellow]✅[/yellow] │
-│  1.4  │ Railway    │ ✅  │  stdio   │ Railway cloud backend                       │
-│  1.5  │ Railway    │ ✅  │   HTTP   │ Railway + opencode                          │
-└────────┴────────────┴─────┴──────────┴────────────────────────────────────────────┘
+┌─────┬────────────────────────────────────────┬─────────────────────────────────┐
+│ No. │ Option                                 │ Description                     │
+├─────┼────────────────────────────────────────┼─────────────────────────────────┤
+│  1  │ Start Local Development               │ Opens submenu (1.1-1.4)         │
+│  2  │ Service Management                    │ Opens submenu (2.1-2.3)         │
+│  3  │ Re-authenticate Google Account        │ Re-authenticate with Google     │
+│  4  │ Help                                   │ Show this help                  │
+│  5  │ Exit                                   │ Quit                            │
+└─────┴────────────────────────────────────────┴─────────────────────────────────┘
 
-[bold yellow]📌 MCP SERVER ONLY (Option 2)[/bold yellow]
+[bold yellow]📌 SUBMENU 1: DEPLOY SERVICES (1.x)[/bold yellow]
 [dim]──────────────────────────────────────────────────────────────────────────────[/dim]
-┌────────┬──────────┬──────────┬────────────────────────────────────────────────┐
-│ Option │ Backend  │Transport │ Use Case                                       │
-├────────┼──────────┼──────────┼────────────────────────────────────────────────┤
-│  2.1  │  Local   │  stdio   │ Test MCP locally (not for opencode)            │
-│  2.2  │  Local   │   HTTP   │ For opencode [yellow]- RECOMMENDED ✅[/yellow]              │
-│  2.3  │ Railway  │  stdio   │ Railway + local testing                        │
-│  2.4  │ Railway  │   HTTP   │ Railway + opencode                             │
-└────────┴──────────┴──────────┴────────────────────────────────────────────────┘
+  1.1  Start Local Dev (Backend + Frontend + MCP)   - Full local stack
+  1.2  Start Local with Railway MCP (Remote)       - Backend + Railway MCP
+  1.3  Start MCP Server Only (Local)               - MCP only on port 8001
+  1.4  Backend + Frontend Only (No MCP)             - No MCP server
 
-[bold yellow]📌 TRANSPORTS EXPLAINED[/bold yellow]
+[bold yellow]📌 SUBMENU 2: SERVICE MANAGEMENT (2.x)[/bold yellow]
 [dim]──────────────────────────────────────────────────────────────────────────────[/dim]
-• [cyan]stdio:[/cyan]  MCP spawned as child process by opencode. Can't reuse existing server.
-• [cyan]HTTP:[/cyan]   opencode connects to running server on port 8001. [yellow]✅ Recommended[/yellow]
+  2.1  Status Check          - Show running services status
+  2.2  Stop MCP Server       - Kill MCP server only
+  2.3  Stop All Services    - Kill all services
 
-[bold yellow]📌 QUICK START FOR OPENCODE[/bold yellow]
+[bold yellow]📌 PORTS[/bold yellow]
 [dim]──────────────────────────────────────────────────────────────────────────────[/dim]
-1. Choose: [cyan]2. MCP Server Only[/cyan] → [cyan]2.2 MCP (Local, HTTP)[/cyan]
-2. Authenticate once in browser (first time only)
-3. opencode will auto-connect to [cyan]http://localhost:8001/mcp[/cyan]
+  Backend:   http://localhost:8000
+  MCP:       http://localhost:8001/mcp
+  Frontend:  http://localhost:5173
 
-[bold yellow]📌 LEGEND[/bold yellow]
+[bold yellow]📌 OPENCODE INTEGRATION[/bold yellow]
 [dim]──────────────────────────────────────────────────────────────────────────────[/dim]
-• [green]✅[/green] = Included/Running
-• [red]❌[/red] = Not included
-• [cyan]Local[/cyan] = Running on your computer (port 8000)
-• [cyan]Railway[/cyan] = Cloud-hosted backend (no local backend)
-• [cyan]HTTP[/cyan] = opencode can connect remotely
+  1. Run: [cyan]1.1 Start Local Dev[/cyan]
+  2. Authenticate with Google (first time only)
+  3. OpenCode Desktop: connect to [cyan]http://localhost:8001/mcp[/cyan]
+
+[bold yellow]📌 RAILWAY DEPLOYMENT[/bold yellow]
+[dim]──────────────────────────────────────────────────────────────────────────────[/dim]
+  1. Run: [cyan]1.2 Start Local with Railway MCP[/cyan]
+  2. Enter Railway API token when prompted
+  3. MCP available at: https://your-app.up.railway.app/mcp
 
 [bold cyan]═══════════════════════════════════════════════════════════════════════[/bold cyan]
 """

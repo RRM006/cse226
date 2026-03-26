@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  GraduationCap, 
-  History, 
-  Settings, 
-  LogOut, 
+import {
+  GraduationCap,
+  History,
+  Settings,
+  LogOut,
   ChevronDown,
   User,
-  LayoutDashboard
+  LayoutDashboard,
+  Users,
+  FileText,
+  AlertCircle,
 } from 'lucide-react';
 import { signOut } from '../../lib/supabase';
 import { getInitials } from '../../lib/utils';
@@ -27,6 +30,13 @@ export function Navbar({ user }) {
     { label: 'History', path: '/history', icon: History },
   ];
 
+  const adminNavItems = [
+    { label: 'Admin Panel', path: '/admin', icon: Settings },
+    { label: 'Manage Students', path: '/admin/manage-students', icon: Users },
+    { label: 'Audit Results', path: '/admin/audit-results', icon: FileText },
+    { label: 'Requests', path: '/admin/requests', icon: AlertCircle },
+  ];
+
   const isAdmin = user?.role === 'admin';
 
   return (
@@ -34,7 +44,7 @@ export function Navbar({ user }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div 
+          <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate('/upload')}
           >
@@ -55,8 +65,8 @@ export function Navbar({ user }) {
                   onClick={() => navigate(item.path)}
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150
-                    ${isActive 
-                      ? 'bg-primary-100 text-primary-700' 
+                    ${isActive
+                      ? 'bg-primary-100 text-primary-700'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                     }
                   `}
@@ -66,21 +76,26 @@ export function Navbar({ user }) {
                 </button>
               );
             })}
-            {isAdmin && (
-              <button
-                onClick={() => navigate('/admin')}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150
-                  ${location.pathname === '/admin'
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
-                  }
-                `}
-              >
-                <Settings className="w-4 h-4" />
-                Admin
-              </button>
-            )}
+            {isAdmin && adminNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                    ${isActive
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                    }
+                  `}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* User Menu */}
@@ -102,7 +117,7 @@ export function Navbar({ user }) {
 
             {isDropdownOpen && (
               <>
-                <div 
+                <div
                   className="fixed inset-0 z-10"
                   onClick={() => setIsDropdownOpen(false)}
                 />
@@ -121,6 +136,18 @@ export function Navbar({ user }) {
                     <History className="w-4 h-4" />
                     History
                   </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate('/admin/manage-students');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                      <Users className="w-4 h-4" />
+                      Manage Students
+                    </button>
+                  )}
                   {isAdmin && (
                     <button
                       onClick={() => {

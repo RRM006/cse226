@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         "SUPABASE_SERVICE_KEY", "service_key"
     )
     RAILWAY_PORT: int = int(os.getenv("RAILWAY_PORT", "8000"))
+    STUDENT_JWT_SECRET: str = os.getenv("STUDENT_JWT_SECRET", "student-jwt-secret-change-in-production")
 
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")

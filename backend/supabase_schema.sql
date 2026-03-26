@@ -134,3 +134,67 @@ FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 -- =====================
 -- Run this query if you have existing users with 'student' role:
 -- UPDATE profiles SET role = 'admin' WHERE role = 'student';
+
+-- =====================
+-- STUDENTS TABLE (separate from Supabase auth)
+-- =====================
+CREATE TABLE IF NOT EXISTS students (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id      TEXT UNIQUE NOT NULL,
+  password_hash   TEXT NOT NULL,
+  name            TEXT,
+  email           TEXT,
+  is_first_login  BOOLEAN DEFAULT TRUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- AUDIT_RESULTS table (admin creates, student views)
+CREATE TABLE IF NOT EXISTS audit_results (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id      TEXT NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+  scan_id         UUID REFERENCES scans(id) ON DELETE SET NULL,
+  program         TEXT NOT NULL,
+  audit_level     INTEGER NOT NULL,
+  result_json     JSONB NOT NULL,
+  result_text     TEXT NOT NULL,
+  eligible        BOOLEAN NOT NULL,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- REQUESTS table (review/appeal)
+CREATE TABLE IF NOT EXISTS requests (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id      TEXT NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+  audit_result_id UUID REFERENCES audit_results(id) ON DELETE SET NULL,
+  message         TEXT NOT NULL,
+  status          TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'approved', 'rejected')),
+  admin_notes     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =====================
+-- RLS POLICIES for student tables
+-- =====================
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+
+-- Students: admin full access
+CREATE POLICY "students_admin_select" ON students FOR SELECT USING (is_admin());
+CREATE POLICY "students_admin_insert" ON students FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "students_admin_update" ON students FOR UPDATE USING (is_admin());
+CREATE POLICY "students_admin_delete" ON students FOR DELETE USING (is_admin());
+
+-- Audit results: admin full access
+CREATE POLICY "audit_results_admin_select" ON audit_results FOR SELECT USING (is_admin());
+CREATE POLICY "audit_results_admin_insert" ON audit_results FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "audit_results_admin_update" ON audit_results FOR UPDATE USING (is_admin());
+CREATE POLICY "audit_results_admin_delete" ON audit_results FOR DELETE USING (is_admin());
+
+-- Requests: admin full access
+CREATE POLICY "requests_admin_select" ON requests FOR SELECT USING (is_admin());
+CREATE POLICY "requests_admin_insert" ON requests FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "requests_admin_update" ON requests FOR UPDATE USING (is_admin());
+CREATE POLICY "requests_admin_delete" ON requests FOR DELETE USING (is_admin());

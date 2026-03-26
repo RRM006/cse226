@@ -32,6 +32,39 @@ def with_retry(func):
 
 
 @with_retry
+def list_mcp_folders() -> list[dict[str, Any]]:
+    """
+    List all folders in Google Drive that contain 'mcp' in their name.
+    
+    Returns:
+        List of dicts with keys: folder_id, folder_name
+    """
+    config = get_config()
+    drive_service = get_drive_service(
+        config['token_path'],
+        config['credentials_path'],
+        config['reauth']
+    )
+    
+    folder_query = "name contains 'mcp' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    result = drive_service.files().list(
+        q=folder_query,
+        spaces='drive',
+        fields='files(id, name)',
+        orderBy='name'
+    ).execute()
+    
+    folders = result.get('files', [])
+    return [
+        {
+            'folder_id': f['id'],
+            'folder_name': f['name']
+        }
+        for f in folders
+    ]
+
+
+@with_retry
 def list_drive_folder(folder_name: str, file_types: list[str] | None = None) -> list[dict[str, Any]] | str:
     """
     List all files in a Google Drive folder.
