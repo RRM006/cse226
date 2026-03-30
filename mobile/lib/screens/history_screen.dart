@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 class HistoryScreen extends StatefulWidget {
   final Function(String) onViewScan;
   final VoidCallback onBack;
-  
+
   const HistoryScreen({
     super.key,
     required this.onViewScan,
@@ -37,11 +37,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     try {
       final apiService = ApiService();
       final authService = AuthService();
-      
-      apiService.setAccessToken(authService.getAccessToken()!);
-      
+
+      final token = authService.getAccessToken();
+      if (token != null) {
+        apiService.setAccessToken(token);
+      }
+
       final response = await apiService.getHistory(limit: 50);
-      
+
       setState(() {
         _scans = response['scans'] ?? [];
         _total = response['total'] ?? 0;
@@ -79,16 +82,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     try {
       final apiService = ApiService();
       final authService = AuthService();
-      
-      apiService.setAccessToken(authService.getAccessToken()!);
-      
+
+      final token = authService.getAccessToken();
+      if (token != null) {
+        apiService.setAccessToken(token);
+      }
+
       await apiService.deleteScan(scanId);
-      
+
       setState(() {
         _scans.removeWhere((s) => s['scan_id'] == scanId);
         _total--;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Scan deleted successfully')),
@@ -139,7 +145,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+                      Text(_errorMessage!,
+                          style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadHistory,
@@ -161,7 +168,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           final scan = _scans[index];
                           final summary = scan['summary'] ?? {};
                           final isEligible = summary['eligible'] ?? false;
-                          
+
                           return Dismissible(
                             key: Key(scan['scan_id']),
                             direction: DismissDirection.endToStart,
@@ -169,7 +176,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               alignment: Alignment.centerRight,
                               padding: const EdgeInsets.only(right: 16),
                               color: Colors.red,
-                              child: const Icon(Icons.delete, color: Colors.white),
+                              child:
+                                  const Icon(Icons.delete, color: Colors.white),
                             ),
                             confirmDismiss: (direction) async {
                               return await showDialog<bool>(
@@ -179,12 +187,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   content: const Text('Are you sure?'),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(context, false),
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
                                       child: const Text('Cancel'),
                                     ),
                                     TextButton(
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text('Delete',
+                                          style: TextStyle(color: Colors.red)),
                                     ),
                                   ],
                                 ),
@@ -196,17 +207,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             child: Card(
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: isEligible ? Colors.green : Colors.orange,
+                                  backgroundColor:
+                                      isEligible ? Colors.green : Colors.orange,
                                   child: Icon(
                                     isEligible ? Icons.check : Icons.warning,
                                     color: Colors.white,
                                   ),
                                 ),
-                                title: Text('${scan['program']} - Level ${scan['audit_level']}'),
+                                title: Text(
+                                    '${scan['program']} - Level ${scan['audit_level']}'),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('CGPA: ${summary['cgpa']?.toStringAsFixed(2) ?? 'N/A'}'),
+                                    Text(
+                                        'CGPA: ${summary['cgpa']?.toStringAsFixed(2) ?? 'N/A'}'),
                                     Text(
                                       _formatDate(scan['created_at']),
                                       style: const TextStyle(fontSize: 12),
@@ -217,19 +231,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: scan['input_type'] == 'csv' 
-                                            ? Colors.blue.withOpacity(0.1) 
+                                        color: scan['input_type'] == 'csv'
+                                            ? Colors.blue.withOpacity(0.1)
                                             : Colors.purple.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        scan['input_type'] == 'csv' ? 'CSV' : 'OCR',
+                                        scan['input_type'] == 'csv'
+                                            ? 'CSV'
+                                            : 'OCR',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: scan['input_type'] == 'csv' 
-                                              ? Colors.blue 
+                                          color: scan['input_type'] == 'csv'
+                                              ? Colors.blue
                                               : Colors.purple,
                                         ),
                                       ),

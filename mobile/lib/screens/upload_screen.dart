@@ -126,7 +126,10 @@ class _UploadScreenState extends State<UploadScreen> {
       final apiService = ApiService();
       final authService = AuthService();
 
-      apiService.setAccessToken(authService.getAccessToken()!);
+      final token = authService.getAccessToken();
+      if (token != null) {
+        apiService.setAccessToken(token);
+      }
 
       Map<String, dynamic> result;
 
@@ -148,12 +151,14 @@ class _UploadScreenState extends State<UploadScreen> {
 
       widget.onResult(result);
     } catch (e) {
-      if (e is ApiException && e.statusCode == 403) {
+      final errorStr = e.toString();
+      if (errorStr.contains('403') ||
+          errorStr.contains('Admin access required')) {
         widget.onLogout();
         return;
       }
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = errorStr;
         _isUploading = false;
       });
     }

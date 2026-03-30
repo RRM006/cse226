@@ -36,7 +36,7 @@ class AuthService {
   Future<bool> signInWithGoogle() async {
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: '$_supabaseUrl/auth/v1/callback',
+      redirectTo: 'nsu-audit-mobile://login-callback/',
     );
     return true;
   }

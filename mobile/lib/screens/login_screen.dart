@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -21,20 +23,47 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
+  final AuthService _authService = AuthService();
+  final StorageService _storageService = StorageService();
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkExistingSession();
     if (widget.errorMessage != null) {
       _errorMessage = widget.errorMessage;
     }
+
+    // Check if already logged in
+    _checkExistingSession();
+
+    // Listen for OAuth callback (when user comes back from browser)
+    _authSubscription = _authService.authStateChanges.listen((AuthState state) {
+      if (state.event == AuthChangeEvent.signedIn) {
+        _handleSuccessfulLogin();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   void _checkExistingSession() {
-    final authService = AuthService();
-    if (authService.isLoggedIn()) {
-      widget.onLoginSuccess();
+    if (_authService.isLoggedIn()) {
+      _handleSuccessfulLogin();
+    }
+  }
+
+  Future<void> _handleSuccessfulLogin() async {
+    final token = _authService.getAccessToken();
+    if (token != null) {
+      await _storageService.saveAdminToken(token);
+      if (mounted) {
+        widget.onLoginSuccess();
+      }
     }
   }
 
@@ -45,13 +74,15 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final authService = AuthService();
-      await authService.signInWithGoogle();
+      await _authService.signInWithGoogle();
+      // Auth state listener above will handle the rest after OAuth callback
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Login failed: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Login failed: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 

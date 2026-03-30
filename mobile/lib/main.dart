@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
+import 'services/auth_service.dart';
+import 'services/api_service.dart';
+import 'screens/auth/login_gate.dart';
+import 'screens/auth/student_login.dart';
 import 'screens/login_screen.dart';
 import 'screens/upload_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/history_screen.dart';
-import 'services/auth_service.dart';
-import 'services/api_service.dart';
+import 'screens/student/student_dashboard.dart';
+import 'screens/student/student_audit_results.dart';
+import 'screens/student/student_requests.dart';
+import 'screens/student/change_password.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await AuthService().initialize();
-  } catch (e) {
-    debugPrint('AuthService initialization error: $e');
-  }
-  runApp(const NSUAuditApp());
+  await AuthService().initialize();
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: const NSUAuditApp(),
+    ),
+  );
 }
 
 class NSUAuditApp extends StatelessWidget {
@@ -24,85 +32,70 @@ class NSUAuditApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NSU Audit Core',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E3A5F)),
       ),
       home: const AuthWrapper(),
+      routes: {
+        '/student/dashboard': (_) => const StudentDashboard(),
+        '/student/audit-results': (_) => const StudentAuditResults(),
+        '/student/requests': (_) => const StudentRequests(),
+        '/student/change-password': (_) => const ChangePassword(),
+        '/history': (_) => const _HistoryRoute(),
+      },
     );
   }
 }
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (auth.isStudent) {
+          return const StudentDashboard();
+        }
+
+        if (auth.isAdmin) {
+          return const AdminHome();
+        }
+
+        return LoginGate(
+          onStudentLoginSuccess: () {
+            Navigator.pushReplacementNamed(context, '/student/dashboard');
+          },
+          onAdminLoginSuccess: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminHome()),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
-  final AuthService _authService = AuthService();
-  Map<String, dynamic>? _currentResult;
-  String? _authError;
+class AdminHome extends StatefulWidget {
+  const AdminHome({super.key});
 
   @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
+  State<AdminHome> createState() => _AdminHomeState();
+}
 
-  bool _isNsuEmail(String? email) {
-    return email != null && email.toLowerCase().endsWith('@northsouth.edu');
-  }
-
-  void _checkAuth() {
-    if (_authService.isLoggedIn()) {
-      final session = _authService.getCurrentSession();
-      final email = session?.user.email;
-
-      if (!_isNsuEmail(email)) {
-        _authError =
-            'Only @northsouth.edu accounts are allowed. Please sign in with your NSU email.';
-        _onLogout();
-        return;
-      }
-
-      final token = _authService.getAccessToken();
-      if (token != null) {
-        ApiService().setAccessToken(token);
-      }
-      setState(() {});
-    }
-  }
-
-  void _onLoginSuccess() async {
-    final session = _authService.getCurrentSession();
-    final email = session?.user.email;
-
-    if (!_isNsuEmail(email)) {
-      await _authService.signOut();
-      ApiService().clearAccessToken();
-      setState(() {
-        _authError =
-            'Only @northsouth.edu accounts are allowed. Please sign in with your NSU email.';
-      });
-      return;
-    }
-
-    final token = _authService.getAccessToken();
-    if (token != null) {
-      ApiService().setAccessToken(token);
-    }
-    setState(() {
-      _authError = null;
-    });
-  }
-
-  void _onLogout() async {
-    await _authService.signOut();
-    ApiService().clearAccessToken();
-    setState(() {});
-  }
+class _AdminHomeState extends State<AdminHome> {
+  Map<String, dynamic>? _currentResult;
 
   void _onResult(Map<String, dynamic> result) {
     setState(() {
@@ -118,31 +111,42 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_authService.isLoggedIn()) {
-      return LoginScreen(
-        onLoginSuccess: _onLoginSuccess,
-        errorMessage: _authError,
-        onClearError: () {
-          setState(() {
-            _authError = null;
-          });
-        },
-      );
-    }
-
     if (_currentResult != null) {
       return ResultScreen(
         result: _currentResult!,
         onNewAudit: _onNewAudit,
         onViewHistory: () {
-          context.push('/history');
+          Navigator.pushNamed(context, '/history');
         },
       );
     }
 
     return UploadScreen(
       onResult: _onResult,
-      onLogout: _onLogout,
+      onLogout: () async {
+        final auth = context.read<AuthProvider>();
+        await auth.logout();
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          );
+        }
+      },
+    );
+  }
+}
+
+class _HistoryRoute extends StatelessWidget {
+  const _HistoryRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    return HistoryScreen(
+      onViewScan: (scanId) {
+        // Load scan and show result
+      },
+      onBack: () => Navigator.pop(context),
     );
   }
 }
