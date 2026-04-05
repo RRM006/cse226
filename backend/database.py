@@ -42,6 +42,17 @@ async def get_scans_by_user(user_id: str) -> list:
     return response.data
 
 
+async def get_scans_by_student_id(student_id: str) -> list:
+    response = (
+        supabase.table("scans")
+        .select("*")
+        .eq("student_id", student_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return response.data
+
+
 async def get_all_scans() -> list:
     response = supabase.table("scans").select("*").execute()
     return response.data

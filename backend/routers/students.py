@@ -24,6 +24,7 @@ from database import (
     get_student_by_student_id,
     update_student,
     update_student_password,
+    get_scans_by_student_id,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["students"])
@@ -273,3 +274,36 @@ async def delete_student_account(
         raise HTTPException(status_code=500, detail="Failed to delete student")
 
     return {"message": "Student deleted", "student_id": student_id}
+
+
+@router.get("/student/scans")
+async def student_get_scans(
+    student: CurrentStudent = Depends(get_current_student),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    scans = await get_scans_by_student_id(student.student_id)
+    total = len(scans)
+    page = scans[offset:offset + limit]
+
+    items = []
+    for s in page:
+        result_json = s.get("result_json", {})
+        summary = {
+            "total_credits": result_json.get("total_credits"),
+            "cgpa": result_json.get("cgpa"),
+            "standing": result_json.get("standing"),
+            "eligible": result_json.get("eligible"),
+            "missing_courses": result_json.get("missing_courses", []),
+        }
+        items.append({
+            "scan_id": s["id"],
+            "student_id": s.get("student_id"),
+            "program": s.get("program"),
+            "input_type": s.get("input_type"),
+            "audit_level": s.get("audit_level"),
+            "summary": summary,
+            "created_at": s.get("created_at"),
+        })
+
+    return {"total": total, "scans": items}

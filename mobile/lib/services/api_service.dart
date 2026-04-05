@@ -232,6 +232,42 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> saveAuditWithStudentId({
+    required String studentId,
+    required String program,
+    required String inputType,
+    required List<String> waivers,
+    required int auditLevel,
+    required Map<String, dynamic> resultJson,
+    required String resultText,
+  }) async {
+    final response = await _dio.post(
+      ApiConfig.auditSaveWithStudentId,
+      data: {
+        'student_id': studentId,
+        'program': program,
+        'input_type': inputType,
+        'raw_input': '',
+        'waivers': waivers,
+        'audit_level': auditLevel,
+        'result_json': resultJson,
+        'result_text': resultText,
+      },
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getStudentScans({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final response = await _dio.get(
+      ApiConfig.studentScans,
+      queryParameters: {'limit': limit, 'offset': offset},
+    );
+    return response.data;
+  }
+
   // ─── History ───
 
   Future<Map<String, dynamic>> getHistory({

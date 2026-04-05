@@ -25,9 +25,14 @@ class ApiConfig {
   static const String auditCsv = '/api/v1/audit/csv';
   static const String auditOcr = '/api/v1/audit/ocr';
   static const String auditSave = '/api/v1/audit/save';
+  static const String auditSaveWithStudentId =
+      '/api/v1/audit/save-with-student-id';
 
   // History Endpoints
   static const String history = '/api/v1/history';
+
+  // Student Scans
+  static const String studentScans = '/api/v1/student/scans';
 
   // Admin Endpoints
   static const String students = '/api/v1/students';

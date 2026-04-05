@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Send, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { FileText, Send, CheckCircle, XCircle, Clock, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getStudentProfile, getStudentAuditResults, getStudentRequests, submitStudentRequest } from '../lib/api';
+import { getStudentProfile, getStudentAuditResults, getStudentRequests, submitStudentRequest, getStudentScans } from '../lib/api';
 import { getStudentToken } from '../lib/supabase';
 import StudentLayout from '../components/StudentLayout';
 
@@ -10,6 +10,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const [results, setResults] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
@@ -27,12 +28,14 @@ export default function StudentDashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resultsRes, requestsRes] = await Promise.all([
+      const [resultsRes, requestsRes, scansRes] = await Promise.all([
         getStudentAuditResults(),
         getStudentRequests(),
+        getStudentScans(),
       ]);
       setResults(resultsRes.results || []);
       setRequests(requestsRes.requests || []);
+      setScans(scansRes.scans || []);
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -173,6 +176,74 @@ export default function StudentDashboard() {
                 </span>
               </motion.div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Scan History */}
+      <div style={{ marginBottom: '28px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
+          Scan History
+        </h3>
+        {loading ? (
+          <div style={{ color: 'rgba(255,255,255,0.5)' }}>Loading...</div>
+        ) : scans.length === 0 ? (
+          <div style={{
+            background: 'rgba(255,255,255,0.05)', borderRadius: '12px',
+            padding: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.5)',
+            fontSize: '13px',
+          }}>
+            No scan history yet.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '8px' }}>
+            {scans.slice(0, 5).map((scan) => {
+              const isEligible = scan.summary?.eligible === true;
+              return (
+                <motion.div
+                  key={scan.scan_id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '10px',
+                    padding: '14px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '8px',
+                      background: 'rgba(139, 92, 246, 0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Upload size={16} color="#8b5cf6" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                        {scan.program} - Level {scan.audit_level}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                        {new Date(scan.created_at).toLocaleDateString()} • {scan.input_type}
+                      </div>
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    background: isEligible ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    color: isEligible ? '#86efac' : '#fca5a5',
+                  }}>
+                    {isEligible ? 'Eligible' : 'Not Eligible'}
+                  </span>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

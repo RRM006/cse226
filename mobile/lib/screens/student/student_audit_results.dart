@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 
 class StudentAuditResults extends StatefulWidget {
@@ -78,6 +80,18 @@ class _StudentAuditResultsState extends State<StudentAuditResults> {
         title: const Text('Audit Results'),
         backgroundColor: const Color(0xFF1E3A5F),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

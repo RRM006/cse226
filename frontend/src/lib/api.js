@@ -463,3 +463,31 @@ export async function updateRequestStatus(requestId, status, adminNotes = null) 
   }
   return data;
 }
+
+export async function saveAuditWithStudentId(data) {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_URL}/api/v1/audit/save-with-student-id`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data)
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to save audit with student ID');
+  }
+  return result;
+}
+
+export async function getStudentScans(limit = 20, offset = 0) {
+  const headers = getStudentAuthHeaders();
+  const response = await fetch(
+    `${API_URL}/api/v1/student/scans?limit=${limit}&offset=${offset}`,
+    { headers }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to get student scans');
+  }
+  return response.json();
+}

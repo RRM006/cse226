@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/stat_card.dart';
 
@@ -15,6 +17,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   String? _error;
   List<dynamic> _results = [];
   List<dynamic> _requests = [];
+  List<dynamic> _scans = [];
 
   @override
   void initState() {
@@ -30,10 +33,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
     try {
       final resultsRes = await _api.getStudentAuditResults();
       final requestsRes = await _api.getStudentRequests();
+      final scansRes = await _api.getStudentScans();
       if (!mounted) return;
       setState(() {
         _results = resultsRes['results'] ?? [];
         _requests = requestsRes['requests'] ?? [];
+        _scans = scansRes['scans'] ?? [];
       });
     } catch (e) {
       if (!mounted) return;
@@ -60,7 +65,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
           ),
         ],
       ),
@@ -146,6 +156,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           ..._results
                               .take(3)
                               .map((result) => _buildResultCard(result)),
+
+                        const SizedBox(height: 24),
+
+                        // Scan History
+                        const Text(
+                          'Scan History',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_scans.isEmpty)
+                          _buildEmptyCard('No scan history yet.',
+                              'Scans from web/CLI uploads will appear here.')
+                        else
+                          ..._scans.take(5).map((scan) => _buildScanCard(scan)),
 
                         const SizedBox(height: 24),
 
@@ -249,6 +274,40 @@ class _StudentDashboardState extends State<StudentDashboard> {
               isEligible ? Colors.green.shade50 : Colors.red.shade50,
         ),
         onTap: () => Navigator.pushNamed(context, '/student/audit-results'),
+      ),
+    );
+  }
+
+  Widget _buildScanCard(dynamic scan) {
+    final summary = scan['summary'] ?? {};
+    final isEligible = summary['eligible'] == true;
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Colors.purple.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.upload,
+            color: Colors.purple,
+            size: 18,
+          ),
+        ),
+        title: Text('${scan['program']} - Level ${scan['audit_level']}'),
+        subtitle: Text(
+          '${_formatDate(scan['created_at'])} • ${scan['input_type']}',
+        ),
+        trailing: Chip(
+          label: Text(
+            isEligible ? 'Eligible' : 'Not Eligible',
+            style: const TextStyle(fontSize: 12),
+          ),
+          backgroundColor:
+              isEligible ? Colors.green.shade50 : Colors.red.shade50,
+        ),
       ),
     );
   }

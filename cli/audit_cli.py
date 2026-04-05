@@ -8,6 +8,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import sys
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -50,6 +51,11 @@ from cli.credentials import (
     save_credentials,
     validate_nsu_email,
 )
+from cli.offline_history import (
+    append_offline_record,
+    get_offline_records,
+    get_offline_student_ids,
+)
 
 if not RICH_AVAILABLE:
     install_rich()
@@ -57,6 +63,26 @@ if not RICH_AVAILABLE:
 load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
 
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
+STUDENT_ID_PATTERN = re.compile(r"^2\d{9}$")
+
+
+def prompt_student_id(initial_value: str = "") -> str:
+    """Prompt for NSU student ID with format validation. Loops until valid."""
+    while True:
+        if initial_value and initial_value != "Unknown":
+            value = prompt_input(f"Enter NSU Student ID (auto-detected: {initial_value})")
+            if not value:
+                value = initial_value
+        else:
+            value = prompt_input("Enter NSU Student ID (10 digits starting with 2)")
+        if not value.strip():
+            print_error("Student ID cannot be empty.")
+            continue
+        if not STUDENT_ID_PATTERN.match(value.strip()):
+            print_error("Invalid format. Must be 10 digits starting with 2 (e.g., 2211234567).")
+            initial_value = ""
+            continue
+        return value.strip()
 
 
 def build_supabase_oauth_url() -> str:
@@ -237,77 +263,116 @@ def cmd_logout():
 
 
 def cmd_history():
-    """Handle history command - fetch and display scan history from API."""
-    if not is_logged_in():
-        print_error("You must be logged in to view history.")
-        print_info("Run: python cli/audit_cli.py login")
-        return False
+    """Handle history command - fetch and display scan history from API and local offline records."""
+    logged_in = is_logged_in()
+    remote_scans = []
+    local_records = get_offline_records()
+    creds = None
 
-    creds = load_credentials()
-    if not creds or not creds.get("access_token"):
-        print_error("Session expired. Please run 'login' again.")
-        return False
+    if logged_in:
+        creds = load_credentials()
+        if not creds or not creds.get("access_token"):
+            print_warning("Session expired — showing local history only.")
+            logged_in = False
 
-    headers = {"Authorization": f"Bearer {creds['access_token']}"}
-
-    try:
-        response = httpx.get(f"{API_URL}/api/v1/history", headers=headers, timeout=30)
-        if response.status_code == 401:
-            print_error("Session expired. Please run 'login' again.")
-            delete_credentials()
-            return False
-        if response.status_code != 200:
-            print_error(f"Error fetching history: {response.status_code}")
-            return False
-
-        data = response.json()
-        scans = data.get("scans", [])
-        total = data.get("total", 0)
-
-        if total == 0:
-            print_header("Scan History")
-            print_info("No scan history found.")
-            return True
-
-        print_header(f"Scan History ({total} total)")
-
-        rows = []
-        for scan in scans:
-            created = scan.get("created_at", "")
-            if created:
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
-                    created = dt.strftime("%Y-%m-%d %H:%M")
-                except Exception:
-                    pass
-
-            input_type = scan.get("input_type", "csv")
-            program = scan.get("program", "-")
-            level = scan.get("audit_level", "-")
-            summary = scan.get("summary", {})
-            eligible = summary.get("eligible")
-            if eligible is True:
-                status = "[green]Eligible[/green]"
-            elif eligible is False:
-                status = "[red]Not Eligible[/red]"
+    if logged_in:
+        headers = {"Authorization": f"Bearer {creds['access_token']}"}
+        try:
+            response = httpx.get(f"{API_URL}/api/v1/history", headers=headers, timeout=30)
+            if response.status_code == 401:
+                print_warning("Session expired — showing local history only.")
+                logged_in = False
+                delete_credentials()
+            elif response.status_code == 200:
+                data = response.json()
+                remote_scans = data.get("scans", [])
             else:
-                status = "-"
+                print_warning(f"Could not fetch remote history ({response.status_code}) — showing local history only.")
+                logged_in = False
+        except httpx.RequestError as e:
+            print_warning(f"Network error — showing local history only: {e}")
+            logged_in = False
 
-            rows.append([created, input_type, program, level, status])
-
-        if RICH_AVAILABLE:
-            from cli.ui import create_table
-            table = create_table(['Date', 'Type', 'Program', 'Level', 'Status'], rows)
-            console.print(table)
-        else:
-            print_table(['Date', 'Type', 'Program', 'Level', 'Status'], rows)
-
+    if not remote_scans and not local_records:
+        print_header("Scan History")
+        print_info("No scan history found.")
         return True
 
-    except httpx.RequestError as e:
-        print_error(f"Network error: {e}")
-        return False
+    # Show student IDs found in local history
+    local_ids = get_offline_student_ids()
+    if local_ids:
+        print_header("Students in Local History")
+        for sid in local_ids:
+            count = len([r for r in local_records if r.get("student_id") == sid])
+            console.print(f"  [cyan]{sid}[/cyan] ({count} audits)")
+        print()
+
+    # Merge: build unified rows with source tag
+    rows = []
+
+    for scan in remote_scans:
+        created = scan.get("created_at", "")
+        if created:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                created = dt.strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                pass
+
+        input_type = scan.get("input_type", "csv")
+        program = scan.get("program", "-")
+        level = scan.get("audit_level", "-")
+        summary = scan.get("summary", {})
+        eligible = summary.get("eligible")
+        student_id = scan.get("student_id", "-")
+        if eligible is True:
+            status = "[green]Eligible[/green]"
+        elif eligible is False:
+            status = "[red]Not Eligible[/red]"
+        else:
+            status = "-"
+
+        rows.append([created, student_id, input_type, program, level, status, "[blue]Remote[/blue]"])
+
+    for rec in local_records:
+        ts = rec.get("timestamp", "")
+        if ts:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                ts = dt.strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                pass
+
+        input_type = rec.get("input_type", "csv")
+        program = rec.get("program", "-")
+        level = rec.get("audit_level", "-")
+        student_id = rec.get("student_id", "-")
+        eligible = rec.get("eligible")
+        if eligible is True:
+            status = "[green]Eligible[/green]"
+        elif eligible is False:
+            status = "[red]Not Eligible[/red]"
+        else:
+            status = "-"
+
+        rows.append([ts, student_id, input_type, program, level, status, "[yellow]Local[/yellow]"])
+
+    # Sort by timestamp string (newest first)
+    rows.sort(key=lambda r: r[0], reverse=True)
+
+    total = len(rows)
+    print_header(f"Scan History ({total} total)")
+
+    if RICH_AVAILABLE:
+        from cli.ui import create_table
+        table = create_table(['Date', 'Student ID', 'Type', 'Program', 'Level', 'Status', 'Source'], rows)
+        console.print(table)
+    else:
+        print_table(['Date', 'Student ID', 'Type', 'Program', 'Level', 'Status', 'Source'], rows)
+
+    return True
 
 
 def send_audit_to_api(result: dict, input_type: str = "csv", csv_text: str = "") -> bool:
@@ -446,6 +511,18 @@ def run_audit_offline(csv_path: str, level: int, program: str = None) -> bool:
         print_divider()
         print(result.get("result_text", ""))
         print_divider()
+
+        # Prompt for NSU student ID with validation
+        result_json = result.get("result_json", {})
+        detected_id = result_json.get("student_id", "")
+        print_header("NSU Student ID")
+        new_id = prompt_student_id(detected_id)
+        result_json["student_id"] = new_id
+
+        # Save to local offline history
+        append_offline_record(result, "csv")
+        print_success(f"Saved to local history (Student: {result_json.get('student_id', 'N/A')})")
+
         return True
     except Exception as e:
         print_error(f"Error running audit: {e}")
@@ -690,6 +767,15 @@ def cmd_ocr(file_path: str = None, program: str = None, audit_level: int = None,
 
         if remote:
             send_audit_to_api(audit_result, "ocr", ocr_result.csv_text if ocr_result else "")
+        else:
+            # Prompt for NSU student ID with validation
+            detected_id = result_json.get("student_id", "")
+            print_header("NSU Student ID")
+            new_id = prompt_student_id(detected_id)
+            result_json["student_id"] = new_id
+
+            append_offline_record(audit_result, "ocr")
+            print_success(f"Saved to local history (Student: {result_json.get('student_id', 'N/A')})")
 
         return True
 

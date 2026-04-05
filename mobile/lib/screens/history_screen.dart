@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -135,6 +137,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: _loadHistory,
             tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
+            tooltip: 'Logout',
           ),
         ],
       ),

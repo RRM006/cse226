@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 
 class ChangePassword extends StatefulWidget {
@@ -86,6 +88,18 @@ class _ChangePasswordState extends State<ChangePassword> {
         backgroundColor: const Color(0xFF1E3A5F),
         foregroundColor: Colors.white,
         automaticallyImplyLeading: !_isFirstLogin,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

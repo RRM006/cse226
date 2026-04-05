@@ -1,13 +1,19 @@
 import os
+import re
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from auth import CurrentUser, get_current_user
+from auth import CurrentUser, get_current_user, hash_password
 from services.audit_service import run_audit
 from services.ocr_service import process_ocr, process_pdf_first_page
 from services.scan_service import save_scan
+from database import (
+    create_audit_result,
+    create_student,
+    get_student_by_student_id,
+)
 
 router = APIRouter(prefix="/api/v1/audit", tags=["audit"])
 
@@ -205,4 +211,88 @@ async def audit_ocr(
         "ocr_confidence": ocr_result.confidence_avg,
         "ocr_extracted_rows": ocr_result.extracted_row_count,
         "ocr_warnings": ocr_result.warnings
+    }
+
+
+class SaveWithStudentIdRequest(BaseModel):
+    student_id: str
+    program: str
+    input_type: str
+    raw_input: str = ""
+    waivers: List[str] = []
+    audit_level: int
+    result_json: dict
+    result_text: str
+
+
+@router.post("/save-with-student-id")
+async def save_audit_with_student_id(
+    request: SaveWithStudentIdRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Save audit result with confirmed student ID. Auto-creates student if not exists."""
+    STUDENT_ID_PATTERN = re.compile(r"^2\d{9}$")
+
+    student_id = request.student_id.strip()
+    if not student_id:
+        raise HTTPException(status_code=400, detail="Student ID is required")
+    if not STUDENT_ID_PATTERN.match(student_id):
+        raise HTTPException(status_code=400, detail="Invalid student ID format. Must be 10 digits starting with 2 (e.g., 2211234567)")
+
+    # Auto-create student if not exists
+    existing = await get_student_by_student_id(student_id)
+    if not existing:
+        password_hash = hash_password(student_id)
+        created = await create_student(
+            student_id=student_id,
+            password_hash=password_hash,
+            name="",
+            email="",
+        )
+        if not created:
+            raise HTTPException(status_code=500, detail="Failed to auto-create student account")
+
+    # Update result_json with confirmed student_id
+    result_json = dict(request.result_json)
+    result_json["student_id"] = student_id
+
+    # Save scan
+    scan = await save_scan(
+        current_user.id,
+        {"result_json": result_json, "result_text": request.result_text},
+        request.input_type,
+        request.raw_input,
+    )
+    if not scan:
+        raise HTTPException(status_code=500, detail="Failed to save scan")
+
+    # Also save to audit_results so student can see it
+    eligible = result_json.get("eligible", False)
+    await create_audit_result(
+        student_id=student_id,
+        program=request.program,
+        audit_level=request.audit_level,
+        result_json=result_json,
+        result_text=request.result_text,
+        eligible=eligible,
+        scan_id=scan["id"],
+    )
+
+    summary = {
+        "total_credits": result_json.get("total_credits"),
+        "cgpa": result_json.get("cgpa"),
+        "standing": result_json.get("standing"),
+        "eligible": eligible,
+        "missing_courses": len(result_json.get("missing_courses", [])),
+    }
+
+    return {
+        "scan_id": scan["id"],
+        "student_id": student_id,
+        "program": request.program,
+        "audit_level": request.audit_level,
+        "summary": summary,
+        "result_text": request.result_text,
+        "result_json": result_json,
+        "created_at": scan["created_at"],
     }

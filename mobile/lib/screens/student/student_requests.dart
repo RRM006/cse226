@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 
 class StudentRequests extends StatefulWidget {
@@ -89,6 +91,16 @@ class _StudentRequestsState extends State<StudentRequests> {
             icon: const Icon(Icons.add),
             onPressed: () => setState(() => _showForm = !_showForm),
             tooltip: 'New Request',
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
+            tooltip: 'Logout',
           ),
         ],
       ),
