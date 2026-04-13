@@ -34,6 +34,7 @@ def _try_import_deps():
     try:
         from rich.console import Console
         import questionary
+
         console = Console()
     except ImportError:
         print("Installing required CLI dependencies (rich, questionary)...")
@@ -47,6 +48,7 @@ def _try_import_deps():
             )
             from rich.console import Console
             import questionary
+
             console = Console()
         except Exception as e:
             print(f"Failed to install CLI dependencies. Error: {e}")
@@ -54,16 +56,18 @@ def _try_import_deps():
 
 
 def _style():
-    return questionary.Style([
-        ("qmark", "fg:cyan bold"),
-        ("question", "bold"),
-        ("answer", "fg:green bold"),
-        ("pointer", "fg:yellow bold"),
-        ("highlighted", "fg:yellow bold"),
-        ("selected", "fg:cyan"),
-        ("instruction", "fg:#888888"),
-        ("text", ""),
-    ])
+    return questionary.Style(
+        [
+            ("qmark", "fg:cyan bold"),
+            ("question", "bold"),
+            ("answer", "fg:green bold"),
+            ("pointer", "fg:yellow bold"),
+            ("highlighted", "fg:yellow bold"),
+            ("selected", "fg:cyan"),
+            ("instruction", "fg:#888888"),
+            ("text", ""),
+        ]
+    )
 
 
 def is_port_in_use(port: int) -> bool:
@@ -83,11 +87,13 @@ def is_port_in_use(port: int) -> bool:
                     return True
         except Exception:
             pass
-            
+
     return False
 
 
-def check_backend_health(url: str = "http://localhost:8000/health", timeout: int = 30) -> bool:
+def check_backend_health(
+    url: str = "http://localhost:8000/health", timeout: int = 30
+) -> bool:
     try:
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=5) as response:
@@ -142,10 +148,18 @@ def find_npm() -> str:
 def ensure_mcp_venv():
     if not MCP_VENV.exists():
         console.print("[cyan]Creating MCP virtual environment...[/cyan]")
-        subprocess.run([sys.executable, "-m", "venv", str(MCP_VENV)], capture_output=True)
+        subprocess.run(
+            [sys.executable, "-m", "venv", str(MCP_VENV)], capture_output=True
+        )
     subprocess.run(
-        [str(MCP_VENV / "bin" / "pip"), "install", "-r", str(MCP_DIR / "requirements.txt"), "-q"],
-        capture_output=True
+        [
+            str(MCP_VENV / "bin" / "pip"),
+            "install",
+            "-r",
+            str(MCP_DIR / "requirements.txt"),
+            "-q",
+        ],
+        capture_output=True,
     )
 
 
@@ -156,12 +170,15 @@ def clear_screen():
 def print_banner():
     from rich.panel import Panel
     from rich import box
-    console.print(Panel(
-        "[bold cyan]NSU AUDIT SYSTEM[/bold cyan] [yellow]v2.0[/yellow]\n"
-        "[dim]Interactive Service Launcher[/dim]",
-        border_style="cyan",
-        box=box.ROUNDED,
-    ))
+
+    console.print(
+        Panel(
+            "[bold cyan]NSU AUDIT SYSTEM[/bold cyan] [yellow]v2.0[/yellow]\n"
+            "[dim]Interactive Service Launcher[/dim]",
+            border_style="cyan",
+            box=box.ROUNDED,
+        )
+    )
 
 
 def _kill_process_tree(pid):
@@ -210,8 +227,7 @@ def stop_all_running():
 def ask_railway_token() -> str | None:
     console.print()
     token = questionary.password(
-        "Paste your Railway API token (or press Enter to cancel):",
-        style=_style()
+        "Paste your Railway API token (or press Enter to cancel):", style=_style()
     ).ask()
 
     if not token or not token.strip():
@@ -237,20 +253,24 @@ def run_backend(check_existing: bool = True) -> tuple[subprocess.Popen | None, b
     """
     if check_existing and is_port_in_use(8000):
         if check_backend_health():
-            console.print("[cyan]Backend already running on port 8000, reusing existing instance...[/cyan]")
+            console.print(
+                "[cyan]Backend already running on port 8000, reusing existing instance...[/cyan]"
+            )
             return None, True
         else:
-            console.print("[yellow]Port 8000 in use but backend not healthy, killing stale process...[/yellow]")
+            console.print(
+                "[yellow]Port 8000 in use but backend not healthy, killing stale process...[/yellow]"
+            )
             try:
                 subprocess.run(["pkill", "-f", "uvicorn.*main:app"], check=False)
                 time.sleep(1)
             except Exception:
                 pass
-    
+
     env = os.environ.copy()
     env["PYTHONPATH"] = str(BACKEND_DIR)
     console.print("[cyan]Starting backend (FastAPI) on port 8000...[/cyan]")
-    
+
     try:
         proc = subprocess.Popen(
             [find_python(), "-m", "uvicorn", "main:app", "--reload", "--port", "8000"],
@@ -305,7 +325,9 @@ def run_mcp_server(mode: str = "offline", http: bool = True) -> subprocess.Popen
     """Start MCP server. mode: 'offline' (local) or 'remote' (Railway). http: always True now."""
     ensure_mcp_venv()
     mode_label = "local" if mode == "offline" else "Railway"
-    console.print(f"[cyan]Starting MCP server ({mode_label} backend, HTTP transport)...[/cyan]")
+    console.print(
+        f"[cyan]Starting MCP server ({mode_label} backend, HTTP transport)...[/cyan]"
+    )
 
     python = str(MCP_VENV / "bin" / "python")
 
@@ -342,11 +364,19 @@ def print_status_panel(mcp_mode: str = None):
 
     backend_running = is_port_in_use(8000)
     backend_pid = get_backend_pid()
-    backend_detail = f"PID {backend_pid}" if backend_pid else ("port 8000" if backend_running else "")
+    backend_detail = (
+        f"PID {backend_pid}"
+        if backend_pid
+        else ("port 8000" if backend_running else "")
+    )
 
     frontend_running = is_port_in_use(5173)
     frontend_pid = get_frontend_pid()
-    frontend_detail = f"PID {frontend_pid}" if frontend_pid else ("port 5173" if frontend_running else "")
+    frontend_detail = (
+        f"PID {frontend_pid}"
+        if frontend_pid
+        else ("port 5173" if frontend_running else "")
+    )
 
     mcp_pid = get_mcp_pid()
     mcp_running = mcp_pid is not None
@@ -362,10 +392,13 @@ def print_status_panel(mcp_mode: str = None):
     ]
 
     panel_content = "\n".join(lines)
-    console.print(Panel(panel_content, title="[bold]Service Status[/bold]", border_style="cyan"))
+    console.print(
+        Panel(panel_content, title="[bold]Service Status[/bold]", border_style="cyan")
+    )
 
 
 # ─── MENU HANDLERS ────────────────────────────────────────────────────────────
+
 
 def handle_deploy_services():
     """Submenu: Deploy Services."""
@@ -384,16 +417,31 @@ def handle_deploy_services():
         ).ask()
 
         if choice == "1.1  Start Local Dev (Backend + Frontend + MCP)":
-            do_deploy_local(include_frontend=True, include_mcp=True, mcp_mode="offline", mcp_http=True)
+            do_deploy_local(
+                include_frontend=True,
+                include_mcp=True,
+                mcp_mode="offline",
+                mcp_http=True,
+            )
             return
         elif choice == "1.2  Start Local with Railway MCP (Remote)":
-            do_deploy_local(include_frontend=True, include_mcp=True, mcp_mode="remote", mcp_http=True)
+            do_deploy_local(
+                include_frontend=True,
+                include_mcp=True,
+                mcp_mode="remote",
+                mcp_http=True,
+            )
             return
         elif choice == "1.3  Start MCP Server Only (Local)":
             do_mcp_only(mcp_mode="offline", http=True)
             return
         elif choice == "1.4  Backend + Frontend Only (No MCP)":
-            do_deploy_local(include_frontend=True, include_mcp=False, mcp_mode="offline", mcp_http=False)
+            do_deploy_local(
+                include_frontend=True,
+                include_mcp=False,
+                mcp_mode="offline",
+                mcp_http=False,
+            )
             return
         elif choice == "Back to Main Menu" or choice is None:
             return
@@ -429,7 +477,13 @@ def handle_service_management():
 
 # ─── ACTION FUNCTIONS ────────────────────────────────────────────────────────
 
-def do_deploy_local(include_frontend: bool = False, include_mcp: bool = False, mcp_mode: str = "offline", mcp_http: bool = False):
+
+def do_deploy_local(
+    include_frontend: bool = False,
+    include_mcp: bool = False,
+    mcp_mode: str = "offline",
+    mcp_http: bool = False,
+):
     """Deploy locally: backend, optionally frontend and/or MCP."""
     frontend_process = None
     mcp_process = None
@@ -450,12 +504,14 @@ def do_deploy_local(include_frontend: bool = False, include_mcp: bool = False, m
             console.print("[bold red]Failed to start backend.[/bold red]")
             shutdown()
             return
-        
+
         backend_process, backend_existing = backend_result
 
         if not backend_existing:
             if not wait_for_backend():
-                console.print("[bold red]Backend failed to start within 30 seconds.[/bold red]")
+                console.print(
+                    "[bold red]Backend failed to start within 30 seconds.[/bold red]"
+                )
                 shutdown()
                 return
 
@@ -463,24 +519,34 @@ def do_deploy_local(include_frontend: bool = False, include_mcp: bool = False, m
 
         if include_frontend:
             if is_port_in_use(5173):
-                console.print("[cyan]Frontend already running on port 5173, reusing existing instance...[/cyan]")
+                console.print(
+                    "[cyan]Frontend already running on port 5173, reusing existing instance...[/cyan]"
+                )
             else:
                 frontend_process = run_frontend()
                 if not wait_for_frontend():
-                    console.print("[bold red]Frontend failed to start within 15 seconds.[/bold red]")
+                    console.print(
+                        "[bold red]Frontend failed to start within 15 seconds.[/bold red]"
+                    )
                 else:
-                    console.print("[bold green]Frontend ready at http://localhost:5173[/bold green]")
+                    console.print(
+                        "[bold green]Frontend ready at http://localhost:5173[/bold green]"
+                    )
 
         if include_mcp:
             mcp_port = 8001 if mcp_http else None
             if mcp_http and is_port_in_use(8001):
-                console.print("[cyan]MCP HTTP server already running on port 8001, reusing...[/cyan]")
+                console.print(
+                    "[cyan]MCP HTTP server already running on port 8001, reusing...[/cyan]"
+                )
             else:
                 if mcp_mode == "remote":
                     if not get_railway_token():
                         token = ask_railway_token()
                         if not token:
-                            console.print("[yellow]Skipping MCP (no token provided).[/yellow]")
+                            console.print(
+                                "[yellow]Skipping MCP (no token provided).[/yellow]"
+                            )
                         else:
                             os.environ["RAILWAY_API_TOKEN"] = token
                             mcp_process = run_mcp_server(mcp_mode, mcp_http)
@@ -497,15 +563,32 @@ def do_deploy_local(include_frontend: bool = False, include_mcp: bool = False, m
         print_status_panel(mcp_mode if include_mcp else None)
         console.print()
         if backend_existing:
-            console.print("[yellow]Note: Backend was already running (not managed by this session)[/yellow]")
-        console.print("[yellow]Press [bold]Ctrl+C[/bold] to stop all services.[/yellow]")
+            console.print(
+                "[yellow]Note: Backend was already running (not managed by this session)[/yellow]"
+            )
+        console.print(
+            "[yellow]Press [bold]Ctrl+C[/bold] to stop all services.[/yellow]"
+        )
 
         import threading
+
         threads = []
         if backend_process and not backend_existing:
-            threads.append(threading.Thread(target=stream_output, args=(backend_process, "backend", "cyan"), daemon=True))
+            threads.append(
+                threading.Thread(
+                    target=stream_output,
+                    args=(backend_process, "backend", "cyan"),
+                    daemon=True,
+                )
+            )
         if frontend_process:
-            threads.append(threading.Thread(target=stream_output, args=(frontend_process, "frontend", "yellow"), daemon=True))
+            threads.append(
+                threading.Thread(
+                    target=stream_output,
+                    args=(frontend_process, "frontend", "yellow"),
+                    daemon=True,
+                )
+            )
 
         for t in threads:
             t.start()
@@ -525,7 +608,7 @@ def do_deploy_local(include_frontend: bool = False, include_mcp: bool = False, m
 def do_mcp_only(mcp_mode: str = "offline", http: bool = False):
     """Start MCP server only."""
     mcp_process = None
-    
+
     if http and is_port_in_use(8001):
         console.print("[cyan]MCP HTTP server already running on port 8001![/cyan]")
         console.print("[cyan]opencode can connect to http://localhost:8001/mcp[/cyan]")
@@ -535,7 +618,7 @@ def do_mcp_only(mcp_mode: str = "offline", http: bool = False):
         except KeyboardInterrupt:
             pass
         return
-    
+
     if mcp_mode == "remote" and not get_railway_token():
         token = ask_railway_token()
         if not token:
@@ -598,19 +681,41 @@ def do_reauth():
     if token_path.exists():
         console.print("[cyan]Removing existing token...[/cyan]")
         token_path.unlink()
-    console.print("[cyan]Opening browser for Google re-authentication...[/cyan]")
+
     python = str(MCP_VENV / "bin" / "python")
+
+    # Kill any existing MCP server on port 8001
+    if is_port_in_use(8001):
+        console.print(
+            "[yellow]MCP server is running on port 8001. Stopping it...[/yellow]"
+        )
+        result = subprocess.run(
+            ["lsof", "-t", "-i", ":8001"], capture_output=True, text=True
+        )
+        if result.stdout.strip():
+            pid = result.stdout.strip().split("\n")[0]
+            try:
+                subprocess.run(["kill", "-9", pid])
+                time.sleep(1)
+                console.print(f"[cyan]Killed process {pid}[/cyan]")
+            except Exception as e:
+                console.print(f"[yellow]Could not kill process: {e}[/yellow]")
+
+    console.print(
+        "[cyan]Forcing re-authentication with Google (will open browser)...[/cyan]"
+    )
     result = subprocess.run(
-        [python, str(MCP_DIR / "mcp_server.py"), "--reauth"],
+        [python, str(MCP_DIR / "mcp_server.py"), "--reauth", "--auth-only"],
         cwd=str(MCP_DIR),
     )
     if result.returncode == 0:
-        console.print("[bold green]Re-authentication successful.[/bold green]")
+        console.print("[bold green]Google re-authentication successful![/bold green]")
     else:
-        console.print("[red]Re-authentication failed.[/red]")
+        console.print("[yellow]Re-authentication process completed.[/yellow]")
 
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
+
 
 def main():
     _try_import_deps()
@@ -625,7 +730,9 @@ def main():
     signal.signal(signal.SIGTERM, handle_ctrl_c)
 
     if not (BACKEND_DIR / "main.py").exists():
-        console.print(f"[bold red]Backend directory or main.py not found: {BACKEND_DIR}[/bold red]")
+        console.print(
+            f"[bold red]Backend directory or main.py not found: {BACKEND_DIR}[/bold red]"
+        )
         sys.exit(1)
 
     if not (FRONTEND_DIR / "package.json").exists():
@@ -677,7 +784,7 @@ def do_help():
     """Show help and use case documentation."""
     while True:
         clear_screen()
-        
+
         help_panel = """
 [bold cyan]═══════════════════════════════════════════════════════════════════════[/bold cyan]
 [bold white]                              HELP & USE CASES[/bold white]
@@ -729,7 +836,7 @@ def do_help():
 [bold cyan]═══════════════════════════════════════════════════════════════════════[/bold cyan]
 """
         console.print(help_panel)
-        
+
         choice = questionary.select(
             "Select an option:",
             choices=[
@@ -737,7 +844,7 @@ def do_help():
             ],
             style=_style(),
         ).ask()
-        
+
         if choice == "Back to Main Menu" or choice is None:
             break
 

@@ -6,43 +6,72 @@ from pathlib import Path
 def get_config():
     """Parse CLI arguments and return configuration dictionary."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('--remote', action='store_true', default=False,
-                        help='Use remote Railway backend instead of local backend')
-    parser.add_argument('--reauth', action='store_true', default=False,
-                        help='Force re-authentication with Google OAuth')
-    parser.add_argument('--api-url', type=str, default=None,
-                        help='API URL (overrides RAILWAY_API_URL or LOCAL_API_URL env var)')
-    parser.add_argument('--http', action='store_true', default=True,
-                        help='Use HTTP transport (default: enabled for OpenCode compatibility)')
-    parser.add_argument('--http-port', type=int, default=8001,
-                        help='Port for HTTP transport (default: 8001)')
+    parser.add_argument(
+        "--remote",
+        action="store_true",
+        default=False,
+        help="Use remote Railway backend instead of local backend",
+    )
+    parser.add_argument(
+        "--reauth",
+        action="store_true",
+        default=False,
+        help="Force re-authentication with Google OAuth",
+    )
+    parser.add_argument(
+        "--auth-only",
+        action="store_true",
+        default=False,
+        help="Only authenticate and exit, do not start server",
+    )
+    parser.add_argument(
+        "--api-url",
+        type=str,
+        default=None,
+        help="API URL (overrides RAILWAY_API_URL or LOCAL_API_URL env var)",
+    )
+    parser.add_argument(
+        "--http",
+        action="store_true",
+        default=True,
+        help="Use HTTP transport (default: enabled for OpenCode compatibility)",
+    )
+    parser.add_argument(
+        "--http-port",
+        type=int,
+        default=8001,
+        help="Port for HTTP transport (default: 8001)",
+    )
     args = parser.parse_args()
 
-    base_dir = Path.home() / '.nsu_mcp'
+    base_dir = Path.home() / ".nsu_mcp"
     base_dir.mkdir(exist_ok=True)
 
     # Default: use local backend (http://localhost:8000)
     # Use --remote flag to switch to Railway backend
     if args.remote:
-        api_url = args.api_url if args.api_url else os.getenv(
-            'RAILWAY_API_URL', 
-            'https://nsu-audit-api.railway.app'
+        api_url = (
+            args.api_url
+            if args.api_url
+            else os.getenv("RAILWAY_API_URL", "https://nsu-audit-api.railway.app")
         )
     else:
         # Local backend (default for mcp web / mcp local)
-        api_url = args.api_url if args.api_url else os.getenv(
-            'LOCAL_API_URL',
-            'http://localhost:8000'
+        api_url = (
+            args.api_url
+            if args.api_url
+            else os.getenv("LOCAL_API_URL", "http://localhost:8000")
         )
 
     return {
-        'remote': args.remote,
-        'reauth': args.reauth,
-        'api_url': api_url,
-        'http': args.http,
-        'http_port': args.http_port,
-        'token_path': base_dir / 'token.json',
-        'credentials_path': Path(__file__).parent / 'credentials.json',
-        'history_path': base_dir / 'history.json',
-        'api_token_path': base_dir / 'api_token.txt',
+        "remote": args.remote,
+        "reauth": args.reauth,
+        "auth_only": args.auth_only,
+        "api_url": api_url,
+        "http": args.http,
+        "http_port": args.http_port,
+        "token_path": base_dir / "token.json",
+        "credentials_path": Path(__file__).parent / "credentials.json",
+        "history_path": base_dir / "history.json",
+        "api_token_path": base_dir / "api_token.txt",
     }

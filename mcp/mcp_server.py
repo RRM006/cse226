@@ -10,12 +10,21 @@ import uvicorn
 
 from config import get_config
 from auth.google_oauth import get_drive_service, load_token
-from tools.drive_tools import list_drive_folder, get_transcript, search_drive, list_mcp_folders
+from tools.drive_tools import (
+    list_drive_folder,
+    get_transcript,
+    search_drive,
+    list_mcp_folders,
+)
 from tools.audit_tools import run_audit
 from tools.email_tools import send_email
 from tools.history_tools import get_audit_history
 from tools.batch_tools import batch_audit_folder
-from tools.intent_parser import parse_audit_query, format_clarification_request, validate_parsed_query
+from tools.intent_parser import (
+    parse_audit_query,
+    format_clarification_request,
+    validate_parsed_query,
+)
 
 
 app = Server("nsu-audit")
@@ -24,7 +33,7 @@ app = Server("nsu-audit")
 def check_token_status(token_path: Path) -> str:
     """
     Check if valid token exists.
-    
+
     Returns:
         'valid' - Token exists and is valid
         'expired' - Token exists but expired, can refresh
@@ -32,12 +41,12 @@ def check_token_status(token_path: Path) -> str:
     """
     creds = load_token(token_path)
     if not creds:
-        return 'missing'
+        return "missing"
     if creds.valid:
-        return 'valid'
+        return "valid"
     if creds.expired and creds.refresh_token:
-        return 'expired'
-    return 'missing'
+        return "expired"
+    return "missing"
 
 
 @app.list_tools()
@@ -54,41 +63,38 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "folder_name": {
                         "type": "string",
-                        "description": "Name of the Google Drive folder to list files from"
+                        "description": "Name of the Google Drive folder to list files from",
                     },
                     "file_types": {
                         "type": "array",
                         "items": {"type": "string"},
                         "description": "Optional file types to filter (e.g. ['csv', 'pdf', 'png'])",
-                        "default": []
-                    }
+                        "default": [],
+                    },
                 },
-                "required": ["folder_name"]
-            }
+                "required": ["folder_name"],
+            },
         ),
         Tool(
             name="list_mcp_folders",
             description="List all Google Drive folders that contain 'mcp' in their name. Use this to find available MCP transcript folders.",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
+            inputSchema={"type": "object", "properties": {}},
         ),
         Tool(
             name="audit_from_query",
-            description="Run a graduation audit from natural language query. " +
-                        "Example: 'Run L3 audit on the mcptest folder for BSCSE' or 'Check if student can graduate'. " +
-                        "Automatically parses intent and orchestrates folder listing, file download, and audit execution.",
+            description="Run a graduation audit from natural language query. "
+            + "Example: 'Run L3 audit on the mcptest folder for BSCSE' or 'Check if student can graduate'. "
+            + "Automatically parses intent and orchestrates folder listing, file download, and audit execution.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Natural language query (e.g., 'Run L3 audit on mcptest folder for BSCSE', 'Check transcript in mcp2.0')"
+                        "description": "Natural language query (e.g., 'Run L3 audit on mcptest folder for BSCSE', 'Check transcript in mcp2.0')",
                     }
                 },
-                "required": ["query"]
-            }
+                "required": ["query"],
+            },
         ),
         Tool(
             name="get_transcript",
@@ -98,16 +104,16 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "file_id": {
                         "type": "string",
-                        "description": "The Google Drive file ID (from list_drive_folder)"
+                        "description": "The Google Drive file ID (from list_drive_folder)",
                     },
                     "file_name": {
                         "type": "string",
                         "description": "Optional human-readable name for the file",
-                        "default": ""
-                    }
+                        "default": "",
+                    },
                 },
-                "required": ["file_id"]
-            }
+                "required": ["file_id"],
+            },
         ),
         Tool(
             name="search_drive",
@@ -117,160 +123,157 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query - student ID, name, or filename keyword"
+                        "description": "Search query - student ID, name, or filename keyword",
                     },
                     "folder_name": {
                         "type": "string",
                         "description": "Optional folder name to limit search to",
-                        "default": ""
-                    }
+                        "default": "",
+                    },
                 },
-                "required": ["query"]
-            }
+                "required": ["query"],
+            },
         ),
         Tool(
             name="run_audit",
-            description="Run a graduation audit (L1, L2, or L3) on a transcript. " +
-                        "L1: Credit tally. L2: CGPA calculation. L3: Full graduation audit with deficiencies. " +
-                        "Use get_transcript first to get the CSV content from Drive.",
+            description="Run a graduation audit (L1, L2, or L3) on a transcript. "
+            + "L1: Credit tally. L2: CGPA calculation. L3: Full graduation audit with deficiencies. "
+            + "Use get_transcript first to get the CSV content from Drive.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "transcript_content": {
                         "type": "string",
-                        "description": "Raw CSV text content (from get_transcript with content_type=csv)"
+                        "description": "Raw CSV text content (from get_transcript with content_type=csv)",
                     },
                     "program": {
                         "type": "string",
-                        "description": "Program: BSCSE, BSEEE, or LLB"
+                        "description": "Program: BSCSE, BSEEE, or LLB",
                     },
                     "audit_level": {
                         "type": "integer",
-                        "description": "Audit level: 1 (credits), 2 (CGPA), or 3 (full graduation)"
+                        "description": "Audit level: 1 (credits), 2 (CGPA), or 3 (full graduation)",
                     },
                     "waivers": {
                         "type": "array",
                         "items": {"type": "string"},
                         "description": "Optional list of course codes to waive (e.g. ['ENG102'])",
-                        "default": []
+                        "default": [],
                     },
                     "student_email": {
                         "type": "string",
                         "description": "Optional student email for records",
-                        "default": ""
-                    }
+                        "default": "",
+                    },
                 },
-                "required": ["transcript_content", "program", "audit_level"]
-            }
+                "required": ["transcript_content", "program", "audit_level"],
+            },
         ),
         Tool(
             name="send_email",
-            description="Send a graduation audit result email via Gmail. " +
-                        "Use after run_audit to email the results to a student.",
+            description="Send a graduation audit result email via Gmail. "
+            + "Use after run_audit to email the results to a student.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "to": {
-                        "type": "string",
-                        "description": "Recipient email address"
-                    },
+                    "to": {"type": "string", "description": "Recipient email address"},
                     "audit_result": {
                         "type": "object",
-                        "description": "The result object from run_audit"
+                        "description": "The result object from run_audit",
                     },
                     "subject": {
                         "type": "string",
                         "description": "Optional custom email subject",
-                        "default": ""
+                        "default": "",
                     },
                     "cc": {
                         "type": "string",
                         "description": "Optional CC address",
-                        "default": ""
+                        "default": "",
                     },
                     "include_full_report": {
                         "type": "boolean",
                         "description": "Include full audit report in email body",
-                        "default": True
-                    }
+                        "default": True,
+                    },
                 },
-                "required": ["to", "audit_result"]
-            }
+                "required": ["to", "audit_result"],
+            },
         ),
         Tool(
             name="get_audit_history",
-            description="Get past audit records from history. " +
-                        "Returns records sorted by date (newest first).",
+            description="Get past audit records from history. "
+            + "Returns records sorted by date (newest first).",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of records to return",
-                        "default": 20
+                        "default": 20,
                     },
                     "program": {
                         "type": "string",
                         "description": "Filter by program (BSCSE, BSEEE, LLB)",
-                        "default": ""
+                        "default": "",
                     },
                     "audit_level": {
                         "type": "integer",
                         "description": "Filter by audit level (1, 2, or 3)",
-                        "default": 0
+                        "default": 0,
                     },
                     "eligible_only": {
                         "type": "boolean",
                         "description": "If true, return only eligible students",
-                        "default": False
+                        "default": False,
                     },
                     "since": {
                         "type": "string",
                         "description": "ISO date string to filter records after (e.g. '2026-03-01')",
-                        "default": ""
-                    }
-                }
-            }
+                        "default": "",
+                    },
+                },
+            },
         ),
         Tool(
             name="batch_audit_folder",
-            description="Audit all transcripts in a Google Drive folder. " +
-                        "Lists folder, downloads each CSV, runs audit, optionally emails results.",
+            description="Audit all transcripts in a Google Drive folder. "
+            + "Lists folder, downloads each CSV, runs audit, optionally emails results.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "folder_name": {
                         "type": "string",
-                        "description": "Name of the Google Drive folder containing transcripts"
+                        "description": "Name of the Google Drive folder containing transcripts",
                     },
                     "program": {
                         "type": "string",
-                        "description": "Program: BSCSE, BSEEE, or LLB"
+                        "description": "Program: BSCSE, BSEEE, or LLB",
                     },
                     "audit_level": {
                         "type": "integer",
                         "description": "Audit level: 1, 2, or 3",
-                        "default": 3
+                        "default": 3,
                     },
                     "send_emails": {
                         "type": "boolean",
                         "description": "Send email to each student with their results",
-                        "default": False
+                        "default": False,
                     },
                     "email_domain": {
                         "type": "string",
                         "description": "Domain to construct student emails (e.g. 'northsouth.edu')",
-                        "default": ""
+                        "default": "",
                     },
                     "waivers": {
                         "type": "array",
                         "items": {"type": "string"},
                         "description": "Optional list of course codes to waive",
-                        "default": []
-                    }
+                        "default": [],
+                    },
                 },
-                "required": ["folder_name", "program", "audit_level"]
-            }
+                "required": ["folder_name", "program", "audit_level"],
+            },
         ),
     ]
 
@@ -279,11 +282,11 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """
     Handle tool calls from MCP clients.
-    
+
     Args:
         name: Name of the tool to call
         arguments: Dictionary of arguments passed to the tool
-    
+
     Returns:
         List of TextContent objects with the tool's response
     """
@@ -293,19 +296,19 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             file_types = arguments.get("file_types") or None
             result = list_drive_folder(folder_name, file_types)
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "list_mcp_folders":
             result = list_mcp_folders()
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "audit_from_query":
             query = arguments.get("query", "")
-            
+
             mcp_folders = list_mcp_folders()
             available_folders = mcp_folders if isinstance(mcp_folders, list) else []
-            
+
             parsed = parse_audit_query(query, available_folders)
-            
+
             is_valid, error_msg = validate_parsed_query(parsed)
             if not is_valid:
                 clarification = format_clarification_request(parsed)
@@ -313,99 +316,145 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     "status": "needs_clarification",
                     "message": error_msg,
                     "clarification_needed": clarification,
-                    "parsed_intent": parsed
+                    "parsed_intent": parsed,
                 }
                 return [TextContent(type="text", text=json.dumps(response, indent=2))]
-            
-            folder_name = parsed['folder_name']
-            program = parsed['program']
-            audit_level = parsed['audit_level']
-            file_name = parsed.get('file_name')
-            send_email_flag = parsed.get('send_email', False)
-            student_email = parsed.get('student_email')
-            waivers = parsed.get('waivers', [])
-            
-            files = list_drive_folder(folder_name, ['csv'])
-            
+
+            folder_name = parsed["folder_name"]
+            program = parsed["program"]
+            audit_level = parsed["audit_level"]
+            file_name = parsed.get("file_name")
+            send_email_flag = parsed.get("send_email", False)
+            student_email = parsed.get("student_email")
+            waivers = parsed.get("waivers", [])
+
+            files = list_drive_folder(folder_name, ["csv"])
+
             if isinstance(files, str):
-                return [TextContent(type="text", text=json.dumps({
-                    "status": "error",
-                    "message": files
-                }, indent=2))]
-            
+                return [
+                    TextContent(
+                        type="text",
+                        text=json.dumps(
+                            {"status": "error", "message": files}, indent=2
+                        ),
+                    )
+                ]
+
             if not files:
-                return [TextContent(type="text", text=json.dumps({
-                    "status": "error",
-                    "message": f"No CSV files found in folder '{folder_name}'"
-                }, indent=2))]
-            
+                return [
+                    TextContent(
+                        type="text",
+                        text=json.dumps(
+                            {
+                                "status": "error",
+                                "message": f"No CSV files found in folder '{folder_name}'",
+                            },
+                            indent=2,
+                        ),
+                    )
+                ]
+
             target_file = None
             if file_name:
                 for f in files:
-                    if file_name.lower() in f['file_name'].lower():
+                    if file_name.lower() in f["file_name"].lower():
                         target_file = f
                         break
                 if not target_file:
-                    return [TextContent(type="text", text=json.dumps({
-                        "status": "error",
-                        "message": f"File '{file_name}' not found in folder '{folder_name}'. Available files: {[f['file_name'] for f in files]}"
-                    }, indent=2))]
+                    return [
+                        TextContent(
+                            type="text",
+                            text=json.dumps(
+                                {
+                                    "status": "error",
+                                    "message": f"File '{file_name}' not found in folder '{folder_name}'. Available files: {[f['file_name'] for f in files]}",
+                                },
+                                indent=2,
+                            ),
+                        )
+                    ]
             else:
                 target_file = files[0]
-            
-            transcript_result = get_transcript(target_file['file_id'], target_file['file_name'])
-            
+
+            transcript_result = get_transcript(
+                target_file["file_id"], target_file["file_name"]
+            )
+
             if isinstance(transcript_result, str):
-                return [TextContent(type="text", text=json.dumps({
-                    "status": "error",
-                    "message": f"Failed to download transcript: {transcript_result}"
-                }, indent=2))]
-            
-            csv_content = transcript_result.get('content', '')
+                return [
+                    TextContent(
+                        type="text",
+                        text=json.dumps(
+                            {
+                                "status": "error",
+                                "message": f"Failed to download transcript: {transcript_result}",
+                            },
+                            indent=2,
+                        ),
+                    )
+                ]
+
+            csv_content = transcript_result.get("content", "")
             if not csv_content:
-                return [TextContent(type="text", text=json.dumps({
-                    "status": "error",
-                    "message": "No content found in transcript file"
-                }, indent=2))]
-            
-            audit_result = run_audit(csv_content, program, audit_level, waivers, student_email)
-            
+                return [
+                    TextContent(
+                        type="text",
+                        text=json.dumps(
+                            {
+                                "status": "error",
+                                "message": "No content found in transcript file",
+                            },
+                            indent=2,
+                        ),
+                    )
+                ]
+
+            audit_result = run_audit(
+                csv_content, program, audit_level, waivers, student_email
+            )
+
             email_status = None
             if send_email_flag and student_email:
                 email_resp = send_email(student_email, audit_result)
                 email_status = email_resp
-            
+
             response = {
                 "status": "success",
                 "parsed_intent": parsed,
-                "file_audited": target_file['file_name'],
+                "file_audited": target_file["file_name"],
                 "audit_result": audit_result,
                 "email_sent": send_email_flag,
-                "email_status": email_status
+                "email_status": email_status,
             }
             return [TextContent(type="text", text=json.dumps(response, indent=2))]
-        
+
         elif name == "get_transcript":
             file_id = arguments.get("file_id", "")
             file_name = arguments.get("file_name") or None
             result = get_transcript(file_id, file_name)
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "search_drive":
             query = arguments.get("query", "")
             folder_name = arguments.get("folder_name") or None
             result = search_drive(query, folder_name)
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "run_audit":
             transcript_content = arguments.get("transcript_content", "")
             program = arguments.get("program", "BSCSE")
             audit_level = arguments.get("audit_level", 3)
             waivers = arguments.get("waivers") or []
             student_email = arguments.get("student_email")
-            result = run_audit(transcript_content, program, audit_level, waivers, str(student_email) if student_email else None)
+            result = run_audit(
+                transcript_content,
+                program,
+                audit_level,
+                waivers,
+                str(student_email) if student_email else None,
+            )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "send_email":
             to = arguments.get("to", "")
             audit_result = arguments.get("audit_result", {})
@@ -413,14 +462,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             cc_arg = arguments.get("cc")
             include_full_report = arguments.get("include_full_report", True)
             result = send_email(
-                to, 
-                audit_result, 
-                subject_arg if subject_arg else None, 
-                cc_arg if cc_arg else None, 
-                include_full_report
+                to,
+                audit_result,
+                subject_arg if subject_arg else None,
+                cc_arg if cc_arg else None,
+                include_full_report,
             )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "get_audit_history":
             limit = arguments.get("limit", 20)
             program = arguments.get("program") or None
@@ -429,9 +478,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             since = arguments.get("since") or None
             if audit_level == 0:
                 audit_level = None
-            result = get_audit_history(limit, program, audit_level, eligible_only, since)
+            result = get_audit_history(
+                limit, program, audit_level, eligible_only, since
+            )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         elif name == "batch_audit_folder":
             folder_name = arguments.get("folder_name", "")
             program = arguments.get("program", "BSCSE")
@@ -439,12 +490,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             send_emails = arguments.get("send_emails", False)
             email_domain = arguments.get("email_domain") or None
             waivers = arguments.get("waivers") or []
-            result = batch_audit_folder(folder_name, program, audit_level, send_emails, email_domain, waivers)
+            result = batch_audit_folder(
+                folder_name, program, audit_level, send_emails, email_domain, waivers
+            )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        
+
         else:
             raise ValueError(f"Unknown tool: {name}")
-    
+
     except Exception as e:
         return [TextContent(type="text", text=f"Error: {str(e)}")]
 
@@ -452,22 +505,28 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 async def initialize_auth():
     """Initialize Google OAuth and return config."""
     config = get_config()
-    
-    token_status = check_token_status(config['token_path'])
-    
-    if token_status == 'valid':
+
+    token_status = check_token_status(config["token_path"])
+
+    if token_status == "valid":
         print("\nUsing existing Google OAuth token...")
-        get_drive_service(config['token_path'], config['credentials_path'], reauth=False)
+        get_drive_service(
+            config["token_path"], config["credentials_path"], reauth=False
+        )
         print("Token validated successfully!")
-    elif token_status == 'expired':
+    elif token_status == "expired":
         print("\nToken expired, refreshing Google OAuth...")
-        get_drive_service(config['token_path'], config['credentials_path'], reauth=False)
+        get_drive_service(
+            config["token_path"], config["credentials_path"], reauth=False
+        )
         print("Token refreshed successfully!")
     else:
         print("\nNo token found. Initializing Google OAuth (opening browser)...")
-        get_drive_service(config['token_path'], config['credentials_path'], config['reauth'])
+        get_drive_service(
+            config["token_path"], config["credentials_path"], config["reauth"]
+        )
         print("Google authentication successful!")
-    
+
     return config
 
 
@@ -480,7 +539,7 @@ async def run_server_stdio():
 
 class MCPSseServer(uvicorn.Server):
     """Custom Uvicorn server for MCP SSE transport."""
-    
+
     def install_signal_handlers(self):
         pass
 
@@ -488,65 +547,71 @@ class MCPSseServer(uvicorn.Server):
 async def run_server_http(host: str = "127.0.0.1", port: int = 8001):
     """Run the MCP server with Streamable HTTP transport for remote clients."""
     config = get_config()
-    
+
     print(f"NSU Audit MCP Server starting...")
     print(f"  Mode: Streamable HTTP (for opencode and remote clients)")
     print(f"  Token path: {config['token_path']}")
-    
+
     await initialize_auth()
-    
+
     from starlette.applications import Starlette
     from starlette.routing import Route, Mount
     from starlette.responses import JSONResponse
     import contextlib
     import asyncio
-    
+
     transport = StreamableHTTPServerTransport(
         mcp_session_id=None,
         is_json_response_enabled=True,
     )
-    
+
     @contextlib.asynccontextmanager
     async def lifespan(app_instance):
         async with transport.connect() as (read_stream, write_stream):
-            task = asyncio.create_task(app.run(read_stream, write_stream, app.create_initialization_options()))
+            task = asyncio.create_task(
+                app.run(read_stream, write_stream, app.create_initialization_options())
+            )
             yield
             task.cancel()
             try:
                 await task
             except asyncio.CancelledError:
                 pass
-    
+
     async def handle_mcp(request):
         await transport.handle_request(
             request.scope,
             request.receive,
             request._send,
         )
-    
+
     async def homepage(request):
-        return JSONResponse({
-            "service": "NSU Audit MCP Server",
-            "status": "running",
-            "transport": "Streamable HTTP",
-            "endpoints": {
-                "mcp": "/mcp",
-                "health": "/health"
+        return JSONResponse(
+            {
+                "service": "NSU Audit MCP Server",
+                "status": "running",
+                "transport": "Streamable HTTP",
+                "endpoints": {"mcp": "/mcp", "health": "/health"},
             }
-        })
-    
+        )
+
     async def health(request):
         return JSONResponse({"status": "healthy"})
-    
+
     starlette_app = Starlette(
         routes=[
             Route("/", homepage),
             Route("/health", health),
-            Mount("/mcp", app=lambda scope, receive, send: transport.handle_request(scope, receive, send)),
+            Mount(
+                "/mcp",
+                app=lambda scope, receive, send: transport.handle_request(
+                    scope, receive, send
+                ),
+            ),
         ],
         lifespan=lifespan,
     )
-    
+
     config_uvicorn = uvicorn.Config(
         starlette_app,
         host=host,
@@ -554,19 +619,59 @@ async def run_server_http(host: str = "127.0.0.1", port: int = 8001):
         log_level="info",
     )
     server = MCPSseServer(config=config_uvicorn)
-    
+
     print(f"\nMCP HTTP server running at http://{host}:{port}/mcp")
     print(f"opencode can connect using: http://{host}:{port}/mcp")
     print("Press Ctrl+C to stop.")
-    
+
     await server.serve()
 
 
 def main():
     """Main entry point for the NSU Audit MCP server."""
     config = get_config()
-    
-    asyncio.run(run_server_http(port=config['http_port']))
+
+    # Auth-only mode: just authenticate and exit
+    if config.get("auth_only", False):
+        print("NSU Audit MCP Server - Auth Only Mode")
+        print(f"  Token path: {config['token_path']}")
+
+        # If --reauth is explicitly passed, always force re-authentication
+        if config.get("reauth", False):
+            print("\nForcing re-authentication as requested...")
+            # Remove existing token to force fresh auth
+            if config["token_path"].exists():
+                config["token_path"].unlink()
+            get_drive_service(
+                config["token_path"], config["credentials_path"], reauth=True
+            )
+        else:
+            token_status = check_token_status(config["token_path"])
+
+            if token_status == "valid":
+                print("\nToken already valid. No need to re-authenticate.")
+                return 0
+            elif token_status == "expired":
+                print("\nToken expired, refreshing...")
+                get_drive_service(
+                    config["token_path"], config["credentials_path"], reauth=False
+                )
+            else:
+                print(
+                    "\nNo token found. Initializing Google OAuth (opening browser)..."
+                )
+                get_drive_service(
+                    config["token_path"],
+                    config["credentials_path"],
+                    config.get("reauth", False),
+                )
+
+        print("\nAuthentication successful!")
+        return 0
+
+    # Override config with command line args
+    port = config.get("http_port", 8001)
+    asyncio.run(run_server_http(port=port))
 
 
 if __name__ == "__main__":

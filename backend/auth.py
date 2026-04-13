@@ -9,11 +9,18 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from config import settings
-from database import create_profile, get_profile, get_student_by_student_id, update_profile_role
+from database import (
+    create_profile,
+    get_profile,
+    get_student_by_student_id,
+    update_profile_role,
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
-STUDENT_JWT_SECRET = os.getenv("STUDENT_JWT_SECRET", "student-jwt-secret-change-in-production")
+STUDENT_JWT_SECRET = os.getenv(
+    "STUDENT_JWT_SECRET", "student-jwt-secret-change-in-production"
+)
 STUDENT_JWT_ALGORITHM = "HS256"
 STUDENT_JWT_EXPIRE_MINUTES = 480  # 8 hours
 
@@ -53,15 +60,24 @@ def create_student_token(student_id: str, student_db_id: str) -> str:
 
 
 _jwks = None
+_jwks_cache_time = None
+JWKS_CACHE_TTL_SECONDS = 3600  # Refresh JWKS every hour
 
 
 async def get_jwks():
-    global _jwks
-    if _jwks is None:
+    global _jwks, _jwks_cache_time
+    now = datetime.now(timezone.utc).timestamp()
+
+    if (
+        _jwks is None
+        or _jwks_cache_time is None
+        or (now - _jwks_cache_time) > JWKS_CACHE_TTL_SECONDS
+    ):
         url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
             _jwks = response.json()
+            _jwks_cache_time = now
     return _jwks
 
 
@@ -132,13 +148,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
 
     profile = await get_profile(user_id)
     if not profile:
-        profile = await create_profile(user_id, email, "admin")
-        role = "admin"
+        profile = await create_profile(user_id, email, "student")
+        role = "student"
     else:
-        role = profile.get("role", "admin")
-        if role != "admin":
-            await update_profile_role(user_id, "admin")
-            role = "admin"
+        role = profile.get("role", "student")
 
     return CurrentUser(id=user_id, email=email, role=role)
 
@@ -191,7 +204,9 @@ async def get_current_student(token: str = Depends(oauth2_scheme)) -> CurrentStu
         )
 
 
-async def require_student(current_student: CurrentStudent = Depends(get_current_student)):
+async def require_student(
+    current_student: CurrentStudent = Depends(get_current_student),
+):
     if current_student.role != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     return current_student
