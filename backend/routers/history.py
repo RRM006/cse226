@@ -21,23 +21,37 @@ async def get_history(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    response = (
-        supabase.table("scans")
-        .select(
-            "id, user_id, student_id, program, input_type, audit_level, result_json, result_text, created_at"
+    # Admin sees ALL scans, regular users see only their own
+    if current_user.role == "admin":
+        response = (
+            supabase.table("scans")
+            .select(
+                "id, user_id, student_id, program, input_type, audit_level, result_json, result_text, created_at"
+            )
+            .order("created_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
         )
-        .eq("user_id", current_user.id)
-        .order("created_at", desc=True)
-        .range(offset, offset + limit - 1)
-        .execute()
-    )
 
-    total_response = (
-        supabase.table("scans")
-        .select("id", count="exact")
-        .eq("user_id", current_user.id)
-        .execute()
-    )
+        total_response = supabase.table("scans").select("id", count="exact").execute()
+    else:
+        response = (
+            supabase.table("scans")
+            .select(
+                "id, user_id, student_id, program, input_type, audit_level, result_json, result_text, created_at"
+            )
+            .eq("user_id", current_user.id)
+            .order("created_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+
+        total_response = (
+            supabase.table("scans")
+            .select("id", count="exact")
+            .eq("user_id", current_user.id)
+            .execute()
+        )
     total = total_response.count or 0
 
     scans = []
