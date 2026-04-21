@@ -25,6 +25,46 @@ from tools.intent_parser import (
     format_clarification_request,
     validate_parsed_query,
 )
+from tools.auth_tools import (
+    student_login,
+    admin_login,
+    admin_login_google,
+    get_current_user,
+    change_password,
+    logout,
+    get_session_info,
+)
+from tools.history_api_tools import (
+    get_history,
+    get_scan_detail,
+    delete_scan,
+    get_all_scans,
+    get_student_results,
+    get_student_result_detail,
+    get_student_scans,
+    get_admin_results,
+)
+from tools.student_mgmt_tools import (
+    create_student,
+    list_students,
+    get_student,
+    update_student,
+    reset_student_password,
+    delete_student,
+)
+from tools.request_tools import (
+    submit_request,
+    get_my_requests,
+    get_all_requests,
+    get_request_detail,
+    update_request_status,
+)
+from tools.audit_api_tools import (
+    run_audit_csv,
+    run_audit_ocr,
+    save_audit,
+    save_audit_with_student,
+)
 
 
 app = Server("nsu-audit")
@@ -136,35 +176,15 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="run_audit",
-            description="Run a graduation audit (L1, L2, or L3) on a transcript. "
-            + "L1: Credit tally. L2: CGPA calculation. L3: Full graduation audit with deficiencies. "
-            + "Use get_transcript first to get the CSV content from Drive.",
+            description="[DEPRECATED - use run_audit_csv] Run a graduation audit on transcript.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "transcript_content": {
-                        "type": "string",
-                        "description": "Raw CSV text content (from get_transcript with content_type=csv)",
-                    },
-                    "program": {
-                        "type": "string",
-                        "description": "Program: BSCSE, BSEEE, or LLB",
-                    },
-                    "audit_level": {
-                        "type": "integer",
-                        "description": "Audit level: 1 (credits), 2 (CGPA), or 3 (full graduation)",
-                    },
-                    "waivers": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Optional list of course codes to waive (e.g. ['ENG102'])",
-                        "default": [],
-                    },
-                    "student_email": {
-                        "type": "string",
-                        "description": "Optional student email for records",
-                        "default": "",
-                    },
+                    "transcript_content": {"type": "string"},
+                    "program": {"type": "string"},
+                    "audit_level": {"type": "integer"},
+                    "waivers": {"type": "array", "items": {"type": "string"}},
+                    "student_email": {"type": "string"},
                 },
                 "required": ["transcript_content", "program", "audit_level"],
             },
@@ -202,8 +222,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_audit_history",
-            description="Get past audit records from history. "
-            + "Returns records sorted by date (newest first).",
+            description="[DEPRECATED - use get_history] Get past audit records.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -273,6 +292,336 @@ async def list_tools() -> list[Tool]:
                     },
                 },
                 "required": ["folder_name", "program", "audit_level"],
+            },
+        ),
+        Tool(
+            name="student_login",
+            description="Login as a student with student ID and password. "
+            + "Required before running student-specific operations.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "description": "10-digit student ID (e.g., '2211234567')",
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Student's password",
+                    },
+                },
+                "required": ["student_id", "password"],
+            },
+        ),
+        Tool(
+            name="admin_login",
+            description="Login as an admin with Supabase access token.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "description": "Supabase JWT access token",
+                    },
+                },
+                "required": ["access_token"],
+            },
+        ),
+        Tool(
+            name="admin_login_google",
+            description="Admin login with Google OAuth (same as frontend). Opens browser for NSU email login, then returns to MCP.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        Tool(
+            name="get_session_info",
+            description="Get current session info. Shows if logged in, role, student ID etc.",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        Tool(
+            name="run_audit_csv",
+            description="Run audit on CSV transcript using backend API. "
+            + "Requires authentication. Uses the same API as the frontend.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "csv_content": {
+                        "type": "string",
+                        "description": "Raw CSV text content",
+                    },
+                    "program": {
+                        "type": "string",
+                        "description": "Program: BSCSE, BSEEE, or LLB",
+                    },
+                    "audit_level": {
+                        "type": "integer",
+                        "description": "Audit level: 1, 2, or 3",
+                        "default": 3,
+                    },
+                    "waivers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of course codes to waive",
+                        "default": [],
+                    },
+                },
+                "required": ["csv_content", "program"],
+            },
+        ),
+        Tool(
+            name="run_audit_ocr",
+            description="Run OCR audit on image/PDF using backend API. "
+            + "Uses EasyOCR to extract transcript data.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "image_base64": {
+                        "type": "string",
+                        "description": "Base64-encoded image or PDF content",
+                    },
+                    "program": {
+                        "type": "string",
+                        "description": "Program: BSCSE, BSEEE, or LLB",
+                    },
+                    "audit_level": {
+                        "type": "integer",
+                        "description": "Audit level: 1, 2, or 3",
+                        "default": 3,
+                    },
+                    "waivers": {"type": "array", "items": {"type": "string"}},
+                    "file_type": {
+                        "type": "string",
+                        "description": "File type: png, jpg, jpeg, or pdf",
+                        "default": "png",
+                    },
+                },
+                "required": ["image_base64", "program"],
+            },
+        ),
+        Tool(
+            name="save_audit",
+            description="Save audit result without running a new audit.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "program": {"type": "string"},
+                    "audit_level": {"type": "integer"},
+                    "result_json": {"type": "object"},
+                    "result_text": {"type": "string"},
+                    "input_type": {"type": "string", "default": "csv"},
+                    "waivers": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["program", "audit_level", "result_json", "result_text"],
+            },
+        ),
+        Tool(
+            name="save_audit_with_student",
+            description="Save audit result and link to a specific student.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {"type": "string"},
+                    "program": {"type": "string"},
+                    "audit_level": {"type": "integer"},
+                    "result_json": {"type": "object"},
+                    "result_text": {"type": "string"},
+                    "input_type": {"type": "string", "default": "csv"},
+                    "waivers": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": [
+                    "student_id",
+                    "program",
+                    "audit_level",
+                    "result_json",
+                    "result_text",
+                ],
+            },
+        ),
+        Tool(
+            name="get_history",
+            description="Get audit history (admin sees all, users see own).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "offset": {"type": "integer", "default": 0},
+                },
+            },
+        ),
+        Tool(
+            name="get_scan_detail",
+            description="Get specific scan details by scan ID.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "scan_id": {"type": "string"},
+                },
+                "required": ["scan_id"],
+            },
+        ),
+        Tool(
+            name="delete_scan",
+            description="Delete a scan by scan ID.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "scan_id": {"type": "string"},
+                },
+                "required": ["scan_id"],
+            },
+        ),
+        Tool(
+            name="get_student_results",
+            description="Student views own audit results.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "offset": {"type": "integer", "default": 0},
+                },
+            },
+        ),
+        Tool(
+            name="get_student_scans",
+            description="Student views own scan history.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "offset": {"type": "integer", "default": 0},
+                },
+            },
+        ),
+        Tool(
+            name="create_student",
+            description="Create new student account (Admin only).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "email": {"type": "string"},
+                },
+                "required": ["student_id", "name", "email"],
+            },
+        ),
+        Tool(
+            name="list_students",
+            description="List all students (Admin only).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "offset": {"type": "integer", "default": 0},
+                },
+            },
+        ),
+        Tool(
+            name="get_student",
+            description="Get student details by student ID (Admin only).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {"type": "string"},
+                },
+                "required": ["student_id"],
+            },
+        ),
+        Tool(
+            name="update_student",
+            description="Update student info (Admin only).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "email": {"type": "string"},
+                },
+                "required": ["student_id"],
+            },
+        ),
+        Tool(
+            name="reset_student_password",
+            description="Reset student password (Admin only).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {"type": "string"},
+                    "new_password": {"type": "string"},
+                },
+                "required": ["student_id", "new_password"],
+            },
+        ),
+        Tool(
+            name="delete_student",
+            description="Delete student account (Admin only).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "student_id": {"type": "string"},
+                },
+                "required": ["student_id"],
+            },
+        ),
+        Tool(
+            name="submit_request",
+            description="Student submits a review/appeal request.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "audit_result_id": {"type": "string"},
+                },
+                "required": ["message"],
+            },
+        ),
+        Tool(
+            name="get_my_requests",
+            description="Student views own requests.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "offset": {"type": "integer", "default": 0},
+                },
+            },
+        ),
+        Tool(
+            name="get_all_requests",
+            description="Admin views all requests.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "offset": {"type": "integer", "default": 0},
+                },
+            },
+        ),
+        Tool(
+            name="update_request_status",
+            description="Admin updates request status.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "request_id": {"type": "string"},
+                    "status": {"type": "string"},
+                    "admin_notes": {"type": "string"},
+                },
+                "required": ["request_id", "status"],
+            },
+        ),
+        Tool(
+            name="change_password",
+            description="Student changes password.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "current_password": {"type": "string"},
+                    "new_password": {"type": "string"},
+                },
+                "required": ["current_password", "new_password"],
             },
         ),
     ]
@@ -492,6 +841,171 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             waivers = arguments.get("waivers") or []
             result = batch_audit_folder(
                 folder_name, program, audit_level, send_emails, email_domain, waivers
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "student_login":
+            result = student_login(
+                arguments.get("student_id", ""), arguments.get("password", "")
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "admin_login":
+            result = admin_login(arguments.get("access_token", ""))
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "admin_login_google":
+            result = admin_login_google()
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_session_info":
+            result = get_session_info()
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "run_audit_csv":
+            result = run_audit_csv(
+                arguments.get("csv_content", ""),
+                arguments.get("program", "BSCSE"),
+                arguments.get("audit_level", 3),
+                arguments.get("waivers"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "run_audit_ocr":
+            result = run_audit_ocr(
+                arguments.get("image_base64", ""),
+                arguments.get("program", "BSCSE"),
+                arguments.get("audit_level", 3),
+                arguments.get("waivers"),
+                arguments.get("file_type", "png"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "save_audit":
+            result = save_audit(
+                arguments.get("program", ""),
+                arguments.get("audit_level", 3),
+                arguments.get("result_json", {}),
+                arguments.get("result_text", ""),
+                arguments.get("input_type", "csv"),
+                "",
+                arguments.get("waivers"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "save_audit_with_student":
+            result = save_audit_with_student(
+                arguments.get("student_id", ""),
+                arguments.get("program", ""),
+                arguments.get("audit_level", 3),
+                arguments.get("result_json", {}),
+                arguments.get("result_text", ""),
+                arguments.get("input_type", "csv"),
+                "",
+                arguments.get("waivers"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_history":
+            result = get_history(
+                arguments.get("limit", 20),
+                arguments.get("offset", 0),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_scan_detail":
+            result = get_scan_detail(arguments.get("scan_id", ""))
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "delete_scan":
+            result = delete_scan(arguments.get("scan_id", ""))
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_student_results":
+            result = get_student_results(
+                arguments.get("limit", 20),
+                arguments.get("offset", 0),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_student_scans":
+            result = get_student_scans(
+                arguments.get("limit", 20),
+                arguments.get("offset", 0),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "create_student":
+            result = create_student(
+                arguments.get("student_id", ""),
+                arguments.get("name", ""),
+                arguments.get("email", ""),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "list_students":
+            result = list_students(
+                arguments.get("limit", 20),
+                arguments.get("offset", 0),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_student":
+            result = get_student(arguments.get("student_id", ""))
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "update_student":
+            result = update_student(
+                arguments.get("student_id", ""),
+                arguments.get("name"),
+                arguments.get("email"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "reset_student_password":
+            result = reset_student_password(
+                arguments.get("student_id", ""),
+                arguments.get("new_password", ""),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "delete_student":
+            result = delete_student(arguments.get("student_id", ""))
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "submit_request":
+            result = submit_request(
+                arguments.get("message", ""),
+                arguments.get("audit_result_id"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_my_requests":
+            result = get_my_requests(
+                arguments.get("limit", 20),
+                arguments.get("offset", 0),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_all_requests":
+            result = get_all_requests(
+                arguments.get("limit", 20),
+                arguments.get("offset", 0),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "update_request_status":
+            result = update_request_status(
+                arguments.get("request_id", ""),
+                arguments.get("status", ""),
+                arguments.get("admin_notes"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "change_password":
+            result = change_password(
+                arguments.get("current_password", ""),
+                arguments.get("new_password", ""),
             )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 

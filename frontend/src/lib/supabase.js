@@ -24,6 +24,21 @@ export const signInWithGoogle = () =>
     }
   });
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+export const saveSession = async (accessToken) => {
+  if (!accessToken) return;
+  try {
+    await fetch(`${API_URL}/api/v1/session/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+  } catch (e) {
+    console.error('Failed to save session:', e);
+  }
+};
+
 export const signOut = () => supabase?.auth.signOut();
 
 export const onAuthStateChange = (callback) => 
@@ -56,6 +71,10 @@ export const useAuth = () => {
       (event, session) => {
         setSession(session);
         setLoading(false);
+        // Save token to backend for MCP
+        if (session?.access_token) {
+          saveSession(session.access_token);
+        }
       }
     );
 

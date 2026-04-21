@@ -133,19 +133,84 @@ class _AdminHomeState extends State<AdminHome> {
           );
         }
       },
+      onViewHistory: () {
+        Navigator.pushNamed(context, '/history');
+      },
     );
   }
 }
 
-class _HistoryRoute extends StatelessWidget {
+class _HistoryRoute extends StatefulWidget {
   const _HistoryRoute();
 
   @override
+  State<_HistoryRoute> createState() => _HistoryRouteState();
+}
+
+class _HistoryRouteState extends State<_HistoryRoute> {
+  Map<String, dynamic>? _selectedScan;
+  bool _isLoading = false;
+
+  Future<void> _loadScan(String scanId) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final apiService = ApiService();
+      final authService = AuthService();
+      final token = authService.getAccessToken();
+      if (token != null) {
+        apiService.setAccessToken(token);
+      }
+
+      final scanData = await apiService.getScanById(scanId);
+
+      if (mounted) {
+        setState(() {
+          _selectedScan = scanData;
+          _isLoading = false;
+        });
+
+        // Show result screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResultScreen(
+              result: scanData,
+              onNewAudit: () {
+                Navigator.pop(context);
+              },
+              onViewHistory: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/history');
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading scan: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return HistoryScreen(
-      onViewScan: (scanId) {
-        // Load scan and show result
-      },
+      onViewScan: _loadScan,
       onBack: () => Navigator.pop(context),
     );
   }

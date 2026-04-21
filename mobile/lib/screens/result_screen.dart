@@ -110,11 +110,45 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = widget.result['summary'] ?? {};
+    final summary = widget.result['summary'] ?? widget.result;
     final resultJson = widget.result['result_json'] ?? widget.result;
-    final isEligible = summary['eligible'] ?? false;
+    final isEligible = summary['eligible'] ??
+        resultJson['eligible'] ??
+        resultJson['eligible'] ??
+        false;
     final resultText = widget.result['result_text'] ?? '';
     final ocrData = widget.result['ocr_confidence'] != null;
+
+    // Handle empty result - show error message
+    if (summary.isEmpty && resultJson.isEmpty && widget.result.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Audit Result'),
+          backgroundColor: const Color(0xFF1E3A5F),
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: widget.onNewAudit,
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('No result data received',
+                  style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: widget.onNewAudit,
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -188,21 +222,31 @@ class _ResultScreenState extends State<ResultScreen> {
                         'Program',
                         widget.result['program'] ??
                             resultJson['program'] ??
+                            resultJson['program_name'] ??
                             ''),
                     _buildInfoRow('Level',
                         'Level ${widget.result['audit_level'] ?? resultJson['audit_level'] ?? ''}'),
                     _buildInfoRow(
-                        'Student ID', resultJson['student_id'] ?? 'N/A'),
+                        'Student ID',
+                        resultJson['student_id'] ??
+                            resultJson['studentID'] ??
+                            'N/A'),
                     const SizedBox(height: 16),
-                    _buildInfoRow(
-                        'Total Credits', '${summary['total_credits'] ?? 0}'),
+                    _buildInfoRow('Total Credits',
+                        '${summary['total_credits'] ?? resultJson['total_credits'] ?? 0}'),
                     _buildInfoRow('CGPA',
-                        '${summary['cgpa']?.toStringAsFixed(2) ?? '0.00'}'),
-                    _buildInfoRow('Standing', summary['standing'] ?? 'N/A'),
-                    if (summary['missing_courses'] != null &&
-                        (summary['missing_courses'] as List).isNotEmpty)
+                        '${(summary['cgpa'] ?? resultJson['cgpa'])?.toStringAsFixed(2) ?? '0.00'}'),
+                    _buildInfoRow('Standing',
+                        summary['standing'] ?? resultJson['standing'] ?? 'N/A'),
+                    if ((summary['missing_courses'] ??
+                                resultJson['missing_courses']) !=
+                            null &&
+                        ((summary['missing_courses'] ??
+                                    resultJson['missing_courses']) as List?)
+                                ?.isNotEmpty ==
+                            true)
                       _buildInfoRow('Missing Courses',
-                          '${summary['missing_courses'].length}'),
+                          '${(summary['missing_courses'] ?? resultJson['missing_courses'])?.length ?? 0}'),
                     if (ocrData) ...[
                       const Divider(height: 24),
                       const Text(

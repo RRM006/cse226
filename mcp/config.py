@@ -2,16 +2,15 @@ import os
 import argparse
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
+
 
 def get_config():
     """Parse CLI arguments and return configuration dictionary."""
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--remote",
-        action="store_true",
-        default=False,
-        help="Use remote Railway backend instead of local backend",
-    )
     parser.add_argument(
         "--reauth",
         action="store_true",
@@ -23,12 +22,6 @@ def get_config():
         action="store_true",
         default=False,
         help="Only authenticate and exit, do not start server",
-    )
-    parser.add_argument(
-        "--api-url",
-        type=str,
-        default=None,
-        help="API URL (overrides RAILWAY_API_URL or LOCAL_API_URL env var)",
     )
     parser.add_argument(
         "--http",
@@ -47,24 +40,14 @@ def get_config():
     base_dir = Path.home() / ".nsu_mcp"
     base_dir.mkdir(exist_ok=True)
 
-    # Default: use local backend (http://localhost:8000)
-    # Use --remote flag to switch to Railway backend
-    if args.remote:
-        api_url = (
-            args.api_url
-            if args.api_url
-            else os.getenv("RAILWAY_API_URL", "https://nsu-audit-api.railway.app")
-        )
-    else:
-        # Local backend (default for mcp web / mcp local)
-        api_url = (
-            args.api_url
-            if args.api_url
-            else os.getenv("LOCAL_API_URL", "http://localhost:8000")
-        )
+    # Always use local backend
+    api_url = os.getenv("API_URL", "http://localhost:8000")
+
+    # Supabase configuration for admin auth
+    supabase_url = os.getenv("SUPABASE_URL", "https://zxzcnpkfabiiecagczao.supabase.co")
+    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "your-anon-key")
 
     return {
-        "remote": args.remote,
         "reauth": args.reauth,
         "auth_only": args.auth_only,
         "api_url": api_url,
@@ -74,4 +57,6 @@ def get_config():
         "credentials_path": Path(__file__).parent / "credentials.json",
         "history_path": base_dir / "history.json",
         "api_token_path": base_dir / "api_token.txt",
+        "supabase_url": supabase_url,
+        "supabase_anon_key": supabase_anon_key,
     }

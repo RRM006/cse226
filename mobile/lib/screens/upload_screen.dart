@@ -8,11 +8,13 @@ import '../services/auth_service.dart';
 class UploadScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onResult;
   final VoidCallback onLogout;
+  final VoidCallback? onViewHistory;
 
   const UploadScreen({
     super.key,
     required this.onResult,
     required this.onLogout,
+    this.onViewHistory,
   });
 
   @override
@@ -172,6 +174,11 @@ class _UploadScreenState extends State<UploadScreen> {
         backgroundColor: const Color(0xFF1E3A5F),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: widget.onViewHistory,
+            tooltip: 'View History',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: widget.onLogout,
