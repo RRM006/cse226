@@ -1,10 +1,115 @@
 import httpx
+import json
+import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, Any
 
 from config import get_config
 from history.local_log import get_records as get_local_records
 from auth.mcp_auth import get_session
+
+
+def get_offline_history(
+    limit: int = 20,
+    program: Optional[str] = None,
+    audit_level: Optional[int] = None,
+    eligible_only: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Get audit history from offline storage (local JSON file).
+
+    Args:
+        limit: Maximum records to return
+        program: Filter by program (BSCSE, BSEEE, LLB)
+        audit_level: Filter by level (1, 2, 3)
+        eligible_only: Only return eligible records
+
+    Returns:
+        List of audit records
+    """
+    history_file = Path.home() / ".nsu_mcp" / "audit_history.json"
+
+    if not history_file.exists():
+        return []
+
+    try:
+        records = json.loads(history_file.read_text())
+    except:
+        return []
+
+    # Filter records
+    filtered = records
+
+    if program:
+        filtered = [r for r in filtered if r.get("program") == program]
+    if audit_level is not None:
+        filtered = [r for r in filtered if r.get("audit_level") == audit_level]
+    if eligible_only:
+        filtered = [r for r in filtered if r.get("eligible") == True]
+
+    # Sort by date (newest first)
+    filtered.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+
+    return filtered[:limit]
+
+
+def save_offline_audit(
+    student_id: str,
+    program: str,
+    audit_level: int,
+    result_json: dict,
+    result_text: str,
+    input_type: str = "csv",
+) -> dict[str, Any]:
+    """
+    Save audit result to local offline storage.
+
+    Args:
+        student_id: Student ID
+        program: BSCSE, BSEEE, or LLB
+        audit_level: 1, 2, or 3
+        result_json: Full result dict
+        result_text: Formatted result text
+        input_type: csv or ocr
+
+    Returns:
+        {success: True, scan_id}
+    """
+    history_file = Path.home() / ".nsu_mcp" / "audit_history.json"
+    history_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load existing records
+    try:
+        if history_file.exists():
+            records = json.loads(history_file.read_text())
+        else:
+            records = []
+    except:
+        records = []
+
+    # Create new record
+    scan_id = str(uuid.uuid4())
+    record = {
+        "scan_id": scan_id,
+        "student_id": student_id,
+        "program": program,
+        "audit_level": audit_level,
+        "input_type": input_type,
+        "result_json": result_json,
+        "result_text": result_text,
+        "eligible": result_json.get("eligible", False),
+        "cgpa": result_json.get("cgpa", 0.0),
+        "total_credits": result_json.get("total_credits", 0),
+        "created_at": datetime.now().isoformat(),
+    }
+
+    records.append(record)
+
+    # Save
+    history_file.write_text(json.dumps(records, indent=2))
+
+    return {"success": True, "scan_id": scan_id}
 
 
 def save_audit_to_database(

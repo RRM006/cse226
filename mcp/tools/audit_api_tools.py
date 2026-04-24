@@ -28,7 +28,7 @@ VALID_AUDIT_LEVELS = [1, 2, 3]
 def run_audit_csv(
     csv_content: str,
     program: str,
-    audit_level: int = 3,
+    audit_level: int,
     waivers: list = None,
     knowledge_file: str = None,
 ) -> dict[str, Any]:
@@ -38,7 +38,7 @@ def run_audit_csv(
     Args:
         csv_content: Raw CSV text content
         program: BSCSE, BSEEE, or LLB
-        audit_level: 1, 2, or 3 (default: 3)
+        audit_level: 1, 2, or 3 (REQUIRED)
         waivers: Optional list of course codes to waive
         knowledge_file: Optional custom knowledge file name
 
@@ -112,20 +112,125 @@ def run_audit_csv(
         return {"success": False, "error": str(e)}
 
 
+def run_audit_ocr_file(
+    file_path: str,
+    program: str,
+    audit_level: int,
+    waivers: list = None,
+) -> dict[str, Any]:
+    """
+    Run OCR audit on local image/PDF file using backend API.
+
+    Args:
+        file_path: Full path to image or PDF file
+        program: BSCSE, BSEEE, or LLB
+        audit_level: 1, 2, or 3 (REQUIRED)
+        waivers: Optional list of course codes to waive
+
+    Returns:
+        Audit result dict with OCR details
+    """
+    import os
+    from pathlib import Path
+
+    program = program.upper()
+    if program not in VALID_PROGRAMS:
+        return {
+            "success": False,
+            "error": f"Invalid program. Must be one of {VALID_PROGRAMS}",
+        }
+
+    if audit_level not in VALID_AUDIT_LEVELS:
+        return {"success": False, "error": f"Invalid audit_level. Must be 1, 2, or 3"}
+
+    # Verify file exists and get extension
+    file = Path(file_path)
+    if not file.exists():
+        return {"success": False, "error": f"File not found: {file_path}"}
+
+    file_ext = file.suffix.lower().lstrip(".")
+    if file_ext not in ["png", "jpg", "jpeg", "pdf"]:
+        return {
+            "success": False,
+            "error": f"Unsupported file type: {file_ext}. Use png, jpg, jpeg, or pdf",
+        }
+
+    headers = get_auth_headers()
+    if not headers.get("Authorization"):
+        return {
+            "success": False,
+            "error": "Not authenticated. Call student_login or admin_login first.",
+        }
+
+    waivers = waivers or []
+    waivers_str = ",".join(waivers) if waivers else ""
+
+    api_url = _get_api_url()
+
+    try:
+        # Read file content
+        file_content = file.read_bytes()
+
+        files = {"file": (f"transcript.{file_ext}", file_content, f"image/{file_ext}")}
+        data = {
+            "program": program,
+            "audit_level": str(audit_level),
+            "waivers": waivers_str,
+        }
+
+        with httpx.Client(timeout=60.0) as client:
+            response = client.post(
+                f"{api_url}/api/v1/audit/ocr", files=files, data=data, headers=headers
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "scan_id": result.get("scan_id"),
+                    "student_id": result.get("student_id"),
+                    "program": result.get("program"),
+                    "audit_level": result.get("audit_level"),
+                    "summary": result.get("summary", {}),
+                    "result_text": result.get("result_text", ""),
+                    "result_json": result.get("result_json", {}),
+                    "created_at": result.get("created_at"),
+                    "ocr_confidence": result.get("ocr_confidence"),
+                    "ocr_extracted_rows": result.get("ocr_extracted_rows"),
+                    "ocr_warnings": result.get("ocr_warnings", []),
+                }
+            elif response.status_code == 401:
+                return {"success": False, "error": "Authentication failed."}
+            elif response.status_code == 422:
+                return {
+                    "success": False,
+                    "error": f"OCR failed: {response.json().get('detail', 'Low confidence')}",
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": str(response.json().get("detail", "OCR failed")),
+                }
+    except httpx.ConnectError:
+        return {"success": False, "error": f"Cannot connect to API at {api_url}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def run_audit_ocr(
     image_base64: str,
     program: str,
-    audit_level: int = 3,
+    audit_level: int,
     waivers: list = None,
     file_type: str = "png",
 ) -> dict[str, Any]:
     """
-    Run OCR audit on image/PDF using backend API.
+    Run OCR audit on image/PDF using backend API (base64 input).
 
     Args:
         image_base64: Base64-encoded image or PDF content
         program: BSCSE, BSEEE, or LLB
-        audit_level: 1, 2, or 3 (default: 3)
+        audit_level: 1, 2, or 3 (REQUIRED)
         waivers: Optional list of course codes to waive
         file_type: File type (png, jpg, jpeg, pdf)
 

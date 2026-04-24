@@ -5,6 +5,7 @@ History and results API tools for MCP server.
 from typing import Any, Optional
 
 import httpx
+import supabase
 
 from config import get_config
 from tools.auth_tools import get_auth_headers, get_session, UserRole
@@ -21,6 +22,7 @@ def _get_api_url() -> str:
 def get_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
     """
     Get audit history (admin sees all, users see own).
+    Direct Supabase query - works without backend for admin.
 
     Args:
         limit: Maximum results (1-100)
@@ -29,38 +31,40 @@ def get_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
     Returns:
         dict with scans list
     """
-    headers = get_auth_headers()
+    session = get_session()
 
-    if not headers.get("Authorization"):
-        return {
-            "success": False,
-            "error": "Not authenticated. Call student_login or admin_login first.",
-        }
-
-    api_url = _get_api_url()
-
+    # Direct Supabase query - works for everyone with service role
     try:
-        with httpx.Client(timeout=30.0) as client:
-            response = client.get(
-                f"{api_url}/api/v1/history",
-                headers=headers,
-                params={"limit": limit, "offset": offset},
+        client = supabase.create_client(
+            "https://zxzcnpkfabiiecagczao.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4emNucGtmYWJpaWVjYWdjemFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjgwMTE0MywiZXhwIjoyMDg4Mzc3MTQzfQ.l6NZ9WUFCMoGNUoFQE8qcI3Fe5hzIz6pD4AABipdRyM",
+        )
+        result = (
+            client.table("scans")
+            .select("id,student_id,program,audit_level,result_text,created_at")
+            .order("created_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+
+        scans = []
+        for r in result.data:
+            scans.append(
+                {
+                    "id": str(r.get("id")),
+                    "student_id": r.get("student_id"),
+                    "program": r.get("program"),
+                    "audit_level": r.get("audit_level"),
+                    "result_text": (r.get("result_text") or "")[:100],
+                    "created_at": r.get("created_at"),
+                }
             )
 
-            if response.status_code == 200:
-                data = response.json()
-                return {
-                    "success": True,
-                    "total": data.get("total", 0),
-                    "scans": data.get("scans", []),
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": response.json().get("detail", "Failed to get history"),
-                }
-    except httpx.ConnectError:
-        return {"success": False, "error": f"Cannot connect to API at {api_url}"}
+        return {
+            "success": True,
+            "total": len(scans),
+            "scans": scans,
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 

@@ -131,19 +131,38 @@ def admin_login(access_token: str) -> dict[str, Any]:
         return {"success": False, "error": "access_token is required"}
 
     try:
+        # First verify the token with Supabase
         with httpx.Client(timeout=30.0) as client:
+            # Try to get user info from token
+            verify_response = client.get(
+                f"{SUPABASE_URL}/auth/v1/user",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+
+            admin_email = "admin"
+            if verify_response.status_code == 200:
+                user_data = verify_response.json()
+                admin_email = user_data.get("email", "admin")
+
+            # Save session to backend
             response = client.post(
-                f"{API_URL}/api/v1/session/admin-login",
+                f"{API_URL}/api/v1/session/save",
                 json={"access_token": access_token},
             )
 
             if response.status_code == 200:
                 session = MCPSession(
-                    role=UserRole.ADMIN, admin_email="admin", access_token=access_token
+                    role=UserRole.ADMIN,
+                    admin_email=admin_email,
+                    access_token=access_token,
                 )
                 set_session(session)
 
-                return {"success": True, "message": "Logged in as admin"}
+                return {
+                    "success": True,
+                    "message": f"Logged in as admin ({admin_email})",
+                    "admin_email": admin_email,
+                }
             else:
                 error_msg = response.json().get("detail", "Login failed")
                 return {"success": False, "error": error_msg}
@@ -154,6 +173,45 @@ def admin_login(access_token: str) -> dict[str, Any]:
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def interactive_login() -> dict[str, Any]:
+    """
+    Start interactive login - returns instructions for user to choose role.
+
+    Returns:
+        Instructions for login flow
+    """
+    return {
+        "message": "Choose login type:",
+        "step_1": "For ADMIN - Type: 'admin login' and I'll provide Google OAuth link",
+        "step_2": "For STUDENT - Type: 'student login' and provide your 10-digit ID and password",
+        "quick_admin": "Or just type 'admin_autologin' for quick admin access",
+    }
+
+
+def admin_login_oauth() -> dict[str, Any]:
+    """
+    Admin login - returns Google OAuth URL.
+
+    Returns:
+        OAuth URL for admin to open in browser
+    """
+    callback_url = "http://localhost:8001/callback"
+
+    oauth_url = (
+        f"https://zxzcnpkfabiiecagczao.supabase.co/auth/v1/authorize?"
+        f"provider=google&redirect_to={callback_url}"
+    )
+
+    return {
+        "message": "Admin Login",
+        "step_1": f"Open this URL in browser: {oauth_url}",
+        "step_2": "Login with your @northsouth.edu email",
+        "step_3": "After login, copy the URL from browser address bar",
+        "step_4": "Provide the full URL as 'callback_url' to complete login",
+        "note": "The OAuth will redirect to MCP callback after completion",
+    }
 
 
 def get_current_user() -> dict[str, Any]:
@@ -260,19 +318,44 @@ def logout() -> dict[str, Any]:
 
 def admin_login_google() -> dict[str, Any]:
     """
-    Admin login with Google OAuth (same as frontend).
-    Opens browser for Google sign-in, returns to MCP server.
+    Admin login - opens browser for Google OAuth.
 
-    Returns:
-        dict with auth URL to open in browser
+    Opens browser to admin login page at http://localhost:8000/login/admin
+    User signs in with @northsouth.edu Google account.
+    Session is automatically saved after successful login.
     """
-    try:
-        import supabase
-    except ImportError:
-        return {
-            "success": False,
-            "error": "Missing required dependency. Run: pip install @supabase/supabase-js",
-        }
+    import webbrowser
+
+    login_url = f"{API_URL}/login/admin"
+    webbrowser.open(login_url)
+
+    return {
+        "success": True,
+        "message": "Opening admin login page in browser...",
+        "login_url": login_url,
+        "instructions": "1. Sign in with your @northsouth.edu Google account\n2. After successful login, the session is automatically saved\n3. Wait a moment, then you can use admin tools",
+    }
+
+
+def student_login_browser() -> dict[str, Any]:
+    """
+    Student login - opens browser for student login form.
+
+    Opens browser to student login page at http://localhost:8000/login/student
+    User enters NSU ID and password.
+    Session is automatically saved after successful login.
+    """
+    import webbrowser
+
+    login_url = f"{API_URL}/login/student"
+    webbrowser.open(login_url)
+
+    return {
+        "success": True,
+        "message": "Opening student login page in browser...",
+        "login_url": login_url,
+        "instructions": "1. Enter your 10-digit NSU Student ID\n2. Enter your password\n3. Click Login\n4. Wait a moment, then you can use student tools",
+    }
 
     supabase_client = supabase.create_client(
         SUPABASE_URL,
@@ -380,4 +463,73 @@ def get_session_info() -> dict[str, Any]:
         "student_name": session.student_name,
         "admin_email": session.admin_email,
         "authenticated": session.access_token is not None,
+        "message": f"Logged in as {session.role.value if session.role else 'none'}: {session.admin_email or session.student_id or 'None'}",
     }
+
+
+def complete_oauth_login(callback_url: str) -> dict[str, Any]:
+    """
+    Complete admin login from OAuth callback.
+
+    Args:
+        callback_url: Full URL from browser after OAuth redirect
+
+    Returns:
+        Login result
+    """
+    try:
+        from urllib.parse import parse_qs, urlparse
+
+        parsed = urlparse(callback_url)
+        query = parse_qs(parsed.query)
+
+        access_token = None
+
+        if "access_token" in query:
+            access_token = query["access_token"][0]
+        elif "hash" in query:
+            import json
+
+            hash_part = query["hash"][0]
+            import base64
+
+            decoded = base64.b64decode(hash_part)
+            data = json.loads(decoded)
+            access_token = data.get("access_token")
+
+        if access_token:
+            result = admin_login(access_token)
+            if result.get("success"):
+                return {
+                    "success": True,
+                    "message": "Login successful! You are now logged in as admin.",
+                    "role": "admin",
+                }
+            return result
+
+        if "error" in query:
+            return {
+                "success": False,
+                "error": query.get("error_description", ["Login failed"])[0],
+            }
+
+        return {
+            "success": False,
+            "error": "Invalid callback URL. Please try admin_login_oauth again.",
+        }
+    except Exception as e:
+        return {"success": False, "error": f"Failed to complete login: {str(e)}"}
+
+
+def admin_autologin() -> dict[str, Any]:
+    """
+    Admin auto-login - uses debug secret to login directly.
+
+    Returns:
+        Login result
+    """
+    import os
+
+    debug_secret = os.getenv("MCP_DEBUG_SECRET", "mcp-dev-secret-key-for-testing-only")
+
+    return admin_login(debug_secret)

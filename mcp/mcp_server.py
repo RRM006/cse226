@@ -18,7 +18,11 @@ from tools.drive_tools import (
 )
 from tools.audit_tools import run_audit
 from tools.email_tools import send_email
-from tools.history_tools import get_audit_history
+from tools.history_tools import (
+    get_audit_history,
+    get_offline_history,
+    save_offline_audit,
+)
 from tools.batch_tools import batch_audit_folder
 from tools.intent_parser import (
     parse_audit_query,
@@ -29,6 +33,10 @@ from tools.auth_tools import (
     student_login,
     admin_login,
     admin_login_google,
+    admin_login_oauth,
+    complete_oauth_login,
+    interactive_login,
+    admin_autologin,
     get_current_user,
     change_password,
     logout,
@@ -62,6 +70,7 @@ from tools.request_tools import (
 from tools.audit_api_tools import (
     run_audit_csv,
     run_audit_ocr,
+    run_audit_ocr_file,
     save_audit,
     save_audit_with_student,
 )
@@ -255,6 +264,19 @@ async def list_tools() -> list[Tool]:
             },
         ),
         Tool(
+            name="list_audit_history",
+            description="List audit history from offline storage. Works without backend - shows all previous audits.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 20},
+                    "program": {"type": "string", "default": ""},
+                    "audit_level": {"type": "integer", "default": 0},
+                    "eligible_only": {"type": "boolean", "default": False},
+                },
+            },
+        ),
+        Tool(
             name="batch_audit_folder",
             description="Audit all transcripts in a Google Drive folder. "
             + "Lists folder, downloads each CSV, runs audit, optionally emails results.",
@@ -296,32 +318,28 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="student_login",
-            description="Login as a student with student ID and password. "
-            + "Required before running student-specific operations.",
+            description="Login as a student with student ID and password from database.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "student_id": {
                         "type": "string",
-                        "description": "10-digit student ID (e.g., '2211234567')",
+                        "description": "10-digit student ID",
                     },
-                    "password": {
-                        "type": "string",
-                        "description": "Student's password",
-                    },
+                    "password": {"type": "string", "description": "Student password"},
                 },
                 "required": ["student_id", "password"],
             },
         ),
         Tool(
             name="admin_login",
-            description="Login as an admin with Supabase access token.",
+            description="Login as admin with token (manual).",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "access_token": {
                         "type": "string",
-                        "description": "Supabase JWT access token",
+                        "description": "Supabase JWT token",
                     },
                 },
                 "required": ["access_token"],
@@ -329,10 +347,32 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="admin_login_google",
-            description="Admin login with Google OAuth (same as frontend). Opens browser for NSU email login, then returns to MCP.",
+            description="Get Google OAuth URL for admin login. Opens in browser, then use complete_oauth_login.",
             inputSchema={
                 "type": "object",
                 "properties": {},
+            },
+        ),
+        Tool(
+            name="admin_autologin",
+            description="Quick admin login using debug key. Works without browser.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        Tool(
+            name="complete_oauth_login",
+            description="Complete admin login with callback URL from browser.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "callback_url": {
+                        "type": "string",
+                        "description": "Full URL after OAuth redirect",
+                    },
+                },
+                "required": ["callback_url"],
             },
         ),
         Tool(
@@ -342,8 +382,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="run_audit_csv",
-            description="Run audit on CSV transcript using backend API. "
-            + "Requires authentication. Uses the same API as the frontend.",
+            description="Run audit on CSV transcript using backend API. Requires authentication.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -357,23 +396,20 @@ async def list_tools() -> list[Tool]:
                     },
                     "audit_level": {
                         "type": "integer",
-                        "description": "Audit level: 1, 2, or 3",
-                        "default": 3,
+                        "description": "Audit level: 1, 2, or 3 (REQUIRED)",
                     },
                     "waivers": {
                         "type": "array",
                         "items": {"type": "string"},
                         "description": "Optional list of course codes to waive",
-                        "default": [],
                     },
                 },
-                "required": ["csv_content", "program"],
+                "required": ["csv_content", "program", "audit_level"],
             },
         ),
         Tool(
             name="run_audit_ocr",
-            description="Run OCR audit on image/PDF using backend API. "
-            + "Uses EasyOCR to extract transcript data.",
+            description="Run OCR audit on base64 image/PDF using backend API.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -387,17 +423,41 @@ async def list_tools() -> list[Tool]:
                     },
                     "audit_level": {
                         "type": "integer",
-                        "description": "Audit level: 1, 2, or 3",
-                        "default": 3,
+                        "description": "Audit level: 1, 2, or 3 (REQUIRED)",
                     },
                     "waivers": {"type": "array", "items": {"type": "string"}},
                     "file_type": {
                         "type": "string",
                         "description": "File type: png, jpg, jpeg, or pdf",
-                        "default": "png",
                     },
                 },
-                "required": ["image_base64", "program"],
+                "required": ["image_base64", "program", "audit_level"],
+            },
+        ),
+        Tool(
+            name="run_audit_ocr_file",
+            description="Run OCR audit on local image/PDF file (ADMIN ONLY). Provides file path directly.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Full path to image or PDF file",
+                    },
+                    "program": {
+                        "type": "string",
+                        "description": "Program: BSCSE, BSEEE, or LLB",
+                    },
+                    "audit_level": {
+                        "type": "integer",
+                        "description": "Audit level: 1, 2, or 3 (REQUIRED)",
+                    },
+                    "waivers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                },
+                "required": ["file_path", "program", "audit_level"],
             },
         ),
         Tool(
@@ -624,6 +684,14 @@ async def list_tools() -> list[Tool]:
                 "required": ["current_password", "new_password"],
             },
         ),
+        Tool(
+            name="logout",
+            description="Logout current session. Clears all authentication.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
     ]
 
 
@@ -832,6 +900,16 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
+        elif name == "list_audit_history":
+            limit = arguments.get("limit", 20)
+            program = arguments.get("program") or None
+            audit_level = arguments.get("audit_level")
+            eligible_only = arguments.get("eligible_only", False)
+            if audit_level == 0:
+                audit_level = None
+            result = get_offline_history(limit, program, audit_level, eligible_only)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
         elif name == "batch_audit_folder":
             folder_name = arguments.get("folder_name", "")
             program = arguments.get("program", "BSCSE")
@@ -850,12 +928,24 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
+        elif name == "student_login_browser":
+            result = student_login_browser()
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
         elif name == "admin_login":
             result = admin_login(arguments.get("access_token", ""))
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         elif name == "admin_login_google":
-            result = admin_login_google()
+            result = admin_login_oauth()
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "admin_autologin":
+            result = admin_autologin()
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "complete_oauth_login":
+            result = complete_oauth_login(arguments.get("callback_url", ""))
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         elif name == "get_session_info":
@@ -866,7 +956,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = run_audit_csv(
                 arguments.get("csv_content", ""),
                 arguments.get("program", "BSCSE"),
-                arguments.get("audit_level", 3),
+                arguments.get("audit_level"),
                 arguments.get("waivers"),
             )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
@@ -875,9 +965,18 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = run_audit_ocr(
                 arguments.get("image_base64", ""),
                 arguments.get("program", "BSCSE"),
-                arguments.get("audit_level", 3),
+                arguments.get("audit_level"),
                 arguments.get("waivers"),
                 arguments.get("file_type", "png"),
+            )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "run_audit_ocr_file":
+            result = run_audit_ocr_file(
+                arguments.get("file_path", ""),
+                arguments.get("program", "BSCSE"),
+                arguments.get("audit_level"),
+                arguments.get("waivers"),
             )
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
@@ -1007,6 +1106,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 arguments.get("current_password", ""),
                 arguments.get("new_password", ""),
             )
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "logout":
+            result = logout()
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         else:
