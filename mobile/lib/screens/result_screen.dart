@@ -27,6 +27,8 @@ class _ResultScreenState extends State<ResultScreen> {
   String? _idError;
   bool _editingId = false;
 
+  bool get _isCancelled => !mounted;
+
   bool _isValidStudentId(String id) {
     final trimmed = id.trim();
     if (trimmed.isEmpty) return false;
@@ -43,11 +45,11 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void initState() {
     super.initState();
-    final resultJson = widget.result['result_json'] ?? widget.result;
-    final detectedId = resultJson['student_id'] ?? '';
-    _studentIdController.text = detectedId;
+    final resultJson = _get(widget.result, 'result_json') ?? widget.result;
+    final detectedId = _get(resultJson, 'student_id') ?? '';
+    _studentIdController.text = detectedId ?? '';
 
-    if (_isValidStudentId(detectedId)) {
+    if (detectedId != null && _isValidStudentId(detectedId)) {
       _idSaved = true;
     }
   }
@@ -58,7 +60,18 @@ class _ResultScreenState extends State<ResultScreen> {
     super.dispose();
   }
 
+  T? _get<T>(Map<String, dynamic>? map, String key, {T? defaultValue}) {
+    if (map == null) return defaultValue;
+    return map[key] as T? ?? defaultValue;
+  }
+
+  Map<String, dynamic> _getMap(Map<String, dynamic>? map, String key) {
+    return _get<Map<String, dynamic>>(map, key) ?? {};
+  }
+
   Future<void> _handleSaveStudentId() async {
+    if (!mounted) return;
+
     final studentId = _studentIdController.text.trim();
     if (studentId.isEmpty) {
       setState(() => _idError = 'Student ID is required');
@@ -83,43 +96,65 @@ class _ResultScreenState extends State<ResultScreen> {
         apiService.setAccessToken(token);
       }
 
-      final resultJson = widget.result['result_json'] ?? widget.result;
-      final summary = widget.result['summary'] ?? {};
+      final resultJson = _getMap(widget.result, 'result_json');
+      final program = _get<String>(widget.result, 'program') ??
+          _get<String>(resultJson, 'program') ??
+          '';
+      final auditLevel = _get<int>(widget.result, 'audit_level') ??
+          _get<int>(resultJson, 'audit_level') ??
+          3;
+      final waivers =
+          _get<List>(resultJson, 'waivers_applied')?.cast<String>() ?? [];
+      final resultText = _get<String>(widget.result, 'result_text') ?? '';
 
       await apiService.saveAuditWithStudentId(
         studentId: studentId,
-        program: widget.result['program'] ?? resultJson['program'] ?? '',
-        inputType: widget.result['input_type'] ?? 'csv',
-        waivers: List<String>.from(resultJson['waivers_applied'] ?? []),
-        auditLevel:
-            widget.result['audit_level'] ?? resultJson['audit_level'] ?? 3,
+        program: program,
+        inputType: _get<String>(widget.result, 'input_type') ?? 'csv',
+        waivers: waivers,
+        auditLevel: auditLevel,
         resultJson: {...resultJson, 'student_id': studentId},
-        resultText: widget.result['result_text'] ?? '',
+        resultText: resultText,
       );
 
+      if (!mounted) return;
       setState(() {
         _idSaved = true;
         _editingId = false;
       });
     } catch (e) {
-      setState(() => _idError = e.toString().replaceFirst('Exception: ', ''));
+      if (!mounted) return;
+      String msg = e.toString();
+      if (msg.contains('Exception: '))
+        msg = msg.replaceFirst('Exception: ', '');
+      if (msg.contains('ApiException: ')) {
+        msg = msg.replaceFirst(RegExp(r'ApiException: \d+ - '), '');
+      }
+      setState(() => _idError = msg);
     } finally {
-      setState(() => _savingId = false);
+      if (mounted) setState(() => _savingId = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final summary = widget.result['summary'] ?? widget.result;
-    final resultJson = widget.result['result_json'] ?? widget.result;
-    final isEligible = summary['eligible'] ??
-        resultJson['eligible'] ??
-        resultJson['eligible'] ??
-        false;
-    final resultText = widget.result['result_text'] ?? '';
-    final ocrData = widget.result['ocr_confidence'] != null;
+    final summary = _getMap(widget.result, 'summary');
+    final resultJson = _getMap(widget.result, 'result_json');
 
-    // Handle empty result - show error message
+    final eligibleRaw = summary['eligible'] ?? resultJson['eligible'] ?? false;
+    final bool isEligible;
+    if (eligibleRaw is bool) {
+      isEligible = eligibleRaw;
+    } else if (eligibleRaw is String) {
+      isEligible = eligibleRaw.toString().toLowerCase() == 'true';
+    } else {
+      isEligible = eligibleRaw == true;
+    }
+
+    final resultText = _get<String>(widget.result, 'result_text') ?? '';
+    final ocrConfidence = _get<num>(widget.result, 'ocr_confidence');
+    final ocrData = ocrConfidence != null;
+
     if (summary.isEmpty && resultJson.isEmpty && widget.result.isEmpty) {
       return Scaffold(
         appBar: AppBar(
@@ -182,12 +217,8 @@ class _ResultScreenState extends State<ResultScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // NSU Student ID Confirmation — always shows until valid ID confirmed
             _buildIdConfirmCard(),
-
             const SizedBox(height: 16),
-
-            // Summary Card
             Card(
               elevation: 4,
               child: Padding(
@@ -220,33 +251,29 @@ class _ResultScreenState extends State<ResultScreen> {
                     const Divider(height: 24),
                     _buildInfoRow(
                         'Program',
-                        widget.result['program'] ??
-                            resultJson['program'] ??
-                            resultJson['program_name'] ??
-                            ''),
+                        _get<String>(widget.result, 'program') ??
+                            _get<String>(resultJson, 'program') ??
+                            _get<String>(resultJson, 'program_name') ??
+                            'N/A'),
                     _buildInfoRow('Level',
-                        'Level ${widget.result['audit_level'] ?? resultJson['audit_level'] ?? ''}'),
+                        'Level ${_get<int>(widget.result, 'audit_level') ?? _get<int>(resultJson, 'audit_level') ?? '?'}'),
                     _buildInfoRow(
                         'Student ID',
-                        resultJson['student_id'] ??
-                            resultJson['studentID'] ??
+                        _get<String>(resultJson, 'student_id') ??
+                            _get<String>(resultJson, 'studentID') ??
                             'N/A'),
                     const SizedBox(height: 16),
                     _buildInfoRow('Total Credits',
-                        '${summary['total_credits'] ?? resultJson['total_credits'] ?? 0}'),
+                        '${_get<num>(summary, 'total_credits') ?? _get<num>(resultJson, 'total_credits') ?? 0}'),
                     _buildInfoRow('CGPA',
-                        '${(summary['cgpa'] ?? resultJson['cgpa'])?.toStringAsFixed(2) ?? '0.00'}'),
-                    _buildInfoRow('Standing',
-                        summary['standing'] ?? resultJson['standing'] ?? 'N/A'),
-                    if ((summary['missing_courses'] ??
-                                resultJson['missing_courses']) !=
-                            null &&
-                        ((summary['missing_courses'] ??
-                                    resultJson['missing_courses']) as List?)
-                                ?.isNotEmpty ==
-                            true)
-                      _buildInfoRow('Missing Courses',
-                          '${(summary['missing_courses'] ?? resultJson['missing_courses'])?.length ?? 0}'),
+                        '${((_get<num>(summary, 'cgpa') ?? _get<num>(resultJson, 'cgpa')) ?? 0.0).toStringAsFixed(2)}'),
+                    _buildInfoRow(
+                        'Standing',
+                        _get<String>(summary, 'standing') ??
+                            _get<String>(resultJson, 'standing') ??
+                            'N/A'),
+                    _buildInfoRow('Missing Courses',
+                        '${(_get<List>(summary, 'missing_courses') ?? _get<List>(resultJson, 'missing_courses'))?.length ?? 0}'),
                     if (ocrData) ...[
                       const Divider(height: 24),
                       const Text(
@@ -258,18 +285,18 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                       const SizedBox(height: 8),
                       _buildInfoRow('OCR Confidence',
-                          '${((widget.result['ocr_confidence'] ?? 0) * 100).toStringAsFixed(1)}%'),
+                          '${((ocrConfidence ?? 0) * 100).toStringAsFixed(1)}%'),
                       _buildInfoRow('Extracted Rows',
-                          '${widget.result['ocr_extracted_rows'] ?? 0}'),
-                      if (widget.result['ocr_warnings'] != null &&
-                          (widget.result['ocr_warnings'] as List)
-                              .isNotEmpty) ...[
+                          '${_get<int>(widget.result, 'ocr_extracted_rows') ?? 0}'),
+                      if (_get<List>(widget.result, 'ocr_warnings')
+                              ?.isNotEmpty ==
+                          true) ...[
                         const SizedBox(height: 8),
                         const Text(
                           'OCR Warnings:',
                           style: TextStyle(color: Colors.orange),
                         ),
-                        ...(widget.result['ocr_warnings'] as List)
+                        ...(_get<List>(widget.result, 'ocr_warnings') ?? [])
                             .map((w) => Text(
                                   '• $w',
                                   style: const TextStyle(
@@ -281,10 +308,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Full Result Text
             const Text(
               'Detailed Report',
               style: TextStyle(
@@ -301,18 +325,20 @@ class _ResultScreenState extends State<ResultScreen> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey[300]!),
               ),
-              child: SelectableText(
-                resultText,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  resultText.isEmpty
+                      ? 'No detailed report available.'
+                      : resultText,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Action Buttons
             Row(
               children: [
                 Expanded(
@@ -424,6 +450,9 @@ class _ResultScreenState extends State<ResultScreen> {
                   fillColor: Colors.white,
                   counterText: '',
                 ),
+                onChanged: (_) {
+                  if (mounted) setState(() {});
+                },
               ),
               const SizedBox(height: 8),
               Row(
@@ -472,10 +501,14 @@ class _ResultScreenState extends State<ResultScreen> {
               color: Colors.grey,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

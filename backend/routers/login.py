@@ -3,10 +3,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from starlette.datastructures import URL
-from starlette.responses import RedirectResponse as StarlettRedirect
+
+from routers.session import SaveSessionRequest
 
 from auth import get_current_user
 

@@ -273,7 +273,7 @@ def run_backend(check_existing: bool = True) -> tuple[subprocess.Popen | None, b
 
     try:
         proc = subprocess.Popen(
-            [find_python(), "-m", "uvicorn", "main:app", "--reload", "--port", "8000"],
+            [find_python(), "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
             cwd=str(BACKEND_DIR),
             env=env,
             stdout=subprocess.PIPE,

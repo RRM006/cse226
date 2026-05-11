@@ -24,9 +24,18 @@ class ApiService {
   ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConfig.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 120),
+      sendTimeout: const Duration(seconds: 120),
       headers: {'Accept': 'application/json'},
+      validateStatus: (status) => true,
+    ));
+
+    _dio.interceptors.add(LogInterceptor(
+      requestBody: true,
+      responseBody: false,
+      error: true,
+      logPrint: (o) => print('[API] $o'),
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
@@ -48,6 +57,8 @@ class ApiService {
           requestOptions: error.requestOptions,
           response: error.response,
           error: ApiException(statusCode, message),
+          type: error.type,
+          message: message,
         ));
       },
     ));
@@ -55,12 +66,13 @@ class ApiService {
 
   static String _parseError(dynamic data) {
     if (data is Map) {
-      return data['detail']?.toString() ?? 'Request failed';
+      return data['detail']?.toString() ??
+          'Request failed (${data.runtimeType})';
     }
     if (data is String) {
       return data;
     }
-    return 'Request failed';
+    return 'Request failed (unknown error)';
   }
 
   void setAccessToken(String? token) {
@@ -71,31 +83,116 @@ class ApiService {
     _accessToken = null;
   }
 
+  Response<T>? _safeResponse<T>(Response<T> response) {
+    if (response.statusCode == null) return null;
+    if (response.statusCode! >= 200 && response.statusCode! < 300) {
+      return response;
+    }
+    return null;
+  }
+
+  void _checkError(Response response) {
+    if (response.statusCode == null) {
+      throw ApiException(0, 'Network error: No response from server');
+    }
+    if (response.statusCode! >= 200 && response.statusCode! < 300) {
+      return;
+    }
+    throw ApiException(
+      response.statusCode!,
+      _parseError(response.data),
+    );
+  }
+
+  Future<Map<String, dynamic>> _handleResponse(
+      Future<Response<dynamic>> Function() request) async {
+    try {
+      final response = await request();
+      _checkError(response);
+      if (response.data == null) {
+        throw ApiException(
+            response.statusCode ?? 0, 'Server returned empty response');
+      }
+      if (response.data is! Map<String, dynamic>) {
+        throw ApiException(
+          response.statusCode ?? 0,
+          'Unexpected response format: ${response.data.runtimeType}',
+        );
+      }
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.error is ApiException) rethrow;
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException(408, 'Request timed out. Please try again.');
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw ApiException(
+            0, 'Cannot connect to server. Check your internet connection.');
+      }
+      if (e.response != null) {
+        throw ApiException(
+          e.response!.statusCode ?? 0,
+          _parseError(e.response!.data),
+        );
+      }
+      throw ApiException(0, 'Network error: ${e.message ?? "Unknown"}');
+    }
+  }
+
+  Future<Map<String, dynamic>> _handleListResponse(
+      Future<Response<dynamic>> Function() request) async {
+    return _handleResponse(request);
+  }
+
+  Future<Map<String, dynamic>> _post(
+    String path, {
+    Map<String, dynamic>? data,
+    FormData? formData,
+  }) =>
+      _handleResponse(() => _dio.post(
+            path,
+            data: formData ?? data,
+            options: formData != null
+                ? Options(contentType: 'multipart/form-data')
+                : null,
+          ));
+
+  Future<Map<String, dynamic>> _get(String path,
+          {Map<String, dynamic>? queryParameters}) =>
+      _handleResponse(() => _dio.get(path, queryParameters: queryParameters));
+
+  Future<void> _patch(String path, {Map<String, dynamic>? data}) =>
+      _handleResponse(() => _dio.patch(path, data: data));
+
+  Future<void> _delete(String path) => _handleResponse(() => _dio.delete(path));
+
   // ─── Student Auth ───
 
   Future<Map<String, dynamic>> studentLogin({
     required String studentId,
     required String password,
   }) async {
-    final response = await _dio.post(
+    return _post(
       ApiConfig.studentLogin,
       data: {'student_id': studentId, 'password': password},
-    );
-    final data = response.data;
-    await _storage.saveStudentToken(
-      data['access_token'],
-      data['student_id'],
-      data['name'] ?? '',
-    );
-    _accessToken = data['access_token'];
-    return data;
+    ).then((data) async {
+      await _storage.saveStudentToken(
+        data['access_token']?.toString() ?? '',
+        data['student_id']?.toString() ?? '',
+        data['name']?.toString() ?? '',
+      );
+      _accessToken = data['access_token']?.toString();
+      return data;
+    });
   }
 
   Future<void> studentChangePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
-    await _dio.post(
+    await _post(
       ApiConfig.studentChangePassword,
       data: {
         'current_password': currentPassword,
@@ -105,8 +202,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getStudentProfile() async {
-    final response = await _dio.get(ApiConfig.studentProfile);
-    return response.data;
+    return _get(ApiConfig.studentProfile);
   }
 
   // ─── Student Audit Results ───
@@ -115,19 +211,15 @@ class ApiService {
     int limit = 20,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.studentAuditResults,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> getStudentAuditResultById(
       String resultId) async {
-    final response = await _dio.get(
-      '${ApiConfig.studentAuditResults}/$resultId',
-    );
-    return response.data;
+    return _get('${ApiConfig.studentAuditResults}/$resultId');
   }
 
   // ─── Student Requests ───
@@ -136,26 +228,19 @@ class ApiService {
     required String message,
     String? auditResultId,
   }) async {
-    final body = {'message': message};
-    if (auditResultId != null) {
-      body['audit_result_id'] = auditResultId;
-    }
-    final response = await _dio.post(
-      ApiConfig.studentRequests,
-      data: body,
-    );
-    return response.data;
+    final body = <String, dynamic>{'message': message};
+    if (auditResultId != null) body['audit_result_id'] = auditResultId;
+    return _post(ApiConfig.studentRequests, data: body);
   }
 
   Future<Map<String, dynamic>> getStudentRequests({
     int limit = 20,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.studentRequests,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 
   // ─── Audit (CSV / OCR) ───
@@ -172,15 +257,11 @@ class ApiService {
         filename: file.path.split('/').last,
       ),
       'program': program,
-      'audit_level': auditLevel.toString(),
+      'audit_level': auditLevel,
       if (waivers.isNotEmpty) 'waivers': waivers,
     });
 
-    final response = await _dio.post(
-      ApiConfig.auditCsv,
-      data: formData,
-    );
-    return response.data;
+    return _post(ApiConfig.auditCsv, formData: formData);
   }
 
   Future<Map<String, dynamic>> uploadOcr({
@@ -189,21 +270,27 @@ class ApiService {
     required int auditLevel,
     String waivers = '',
   }) async {
+    print('[API] OCR upload: program=$program, level=$auditLevel, '
+        'file=${file.path.split('/').last}');
+
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(
         file.path,
         filename: file.path.split('/').last,
       ),
       'program': program,
-      'audit_level': auditLevel.toString(),
+      'audit_level': auditLevel,
       if (waivers.isNotEmpty) 'waivers': waivers,
     });
 
-    final response = await _dio.post(
-      ApiConfig.auditOcr,
-      data: formData,
-    );
-    return response.data;
+    try {
+      final data = await _post(ApiConfig.auditOcr, formData: formData);
+      print('[API] OCR response keys: ${data.keys.toList()}');
+      return data;
+    } catch (e) {
+      print('[API] OCR error: $e');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> saveScan({
@@ -216,7 +303,7 @@ class ApiService {
     required String resultText,
     String studentId = '',
   }) async {
-    final response = await _dio.post(
+    return _post(
       ApiConfig.auditSave,
       data: {
         'program': program,
@@ -229,7 +316,6 @@ class ApiService {
         'student_id': studentId,
       },
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> saveAuditWithStudentId({
@@ -241,7 +327,7 @@ class ApiService {
     required Map<String, dynamic> resultJson,
     required String resultText,
   }) async {
-    final response = await _dio.post(
+    return _post(
       ApiConfig.auditSaveWithStudentId,
       data: {
         'student_id': studentId,
@@ -254,18 +340,16 @@ class ApiService {
         'result_text': resultText,
       },
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> getStudentScans({
     int limit = 20,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.studentScans,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 
   // ─── History ───
@@ -274,20 +358,18 @@ class ApiService {
     int limit = 20,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.history,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> getScanById(String scanId) async {
-    final response = await _dio.get('${ApiConfig.history}/$scanId');
-    return response.data;
+    return _get('${ApiConfig.history}/$scanId');
   }
 
   Future<void> deleteScan(String scanId) async {
-    await _dio.delete('${ApiConfig.history}/$scanId');
+    await _delete('${ApiConfig.history}/$scanId');
   }
 
   // ─── Admin: Students ───
@@ -296,11 +378,10 @@ class ApiService {
     int limit = 50,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.students,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> createStudent({
@@ -308,32 +389,30 @@ class ApiService {
     String name = '',
     String email = '',
   }) async {
-    final response = await _dio.post(
+    return _post(
       ApiConfig.students,
       data: {'student_id': studentId, 'name': name, 'email': email},
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> getStudentById(String studentId) async {
-    final response = await _dio.get('${ApiConfig.students}/$studentId');
-    return response.data;
+    return _get('${ApiConfig.students}/$studentId');
   }
 
   Future<void> updateStudent(
       String studentId, Map<String, dynamic> data) async {
-    await _dio.patch('${ApiConfig.students}/$studentId', data: data);
+    await _patch('${ApiConfig.students}/$studentId', data: data);
   }
 
   Future<void> adminResetPassword(String studentId, String newPassword) async {
-    await _dio.patch(
+    await _patch(
       '${ApiConfig.students}/$studentId/reset-password',
       data: {'new_password': newPassword},
     );
   }
 
   Future<void> deleteStudent(String studentId) async {
-    await _dio.delete('${ApiConfig.students}/$studentId');
+    await _delete('${ApiConfig.students}/$studentId');
   }
 
   // ─── Admin: Requests ───
@@ -342,16 +421,14 @@ class ApiService {
     int limit = 50,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.requests,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> getRequestById(String requestId) async {
-    final response = await _dio.get('${ApiConfig.requests}/$requestId');
-    return response.data;
+    return _get('${ApiConfig.requests}/$requestId');
   }
 
   Future<void> updateRequestStatus({
@@ -359,11 +436,9 @@ class ApiService {
     required String status,
     String? adminNotes,
   }) async {
-    final body = {'status': status};
-    if (adminNotes != null) {
-      body['admin_notes'] = adminNotes;
-    }
-    await _dio.patch('${ApiConfig.requests}/$requestId', data: body);
+    final body = <String, dynamic>{'status': status};
+    if (adminNotes != null) body['admin_notes'] = adminNotes;
+    await _patch('${ApiConfig.requests}/$requestId', data: body);
   }
 
   // ─── Admin: Audit Results ───
@@ -377,7 +452,7 @@ class ApiService {
     required bool eligible,
     String? scanId,
   }) async {
-    final data = {
+    final data = <String, dynamic>{
       'student_id': studentId,
       'program': program,
       'audit_level': auditLevel,
@@ -385,24 +460,17 @@ class ApiService {
       'result_text': resultText,
       'eligible': eligible,
     };
-    if (scanId != null) {
-      data['scan_id'] = scanId;
-    }
-    final response = await _dio.post(
-      ApiConfig.auditResults,
-      data: data,
-    );
-    return response.data;
+    if (scanId != null) data['scan_id'] = scanId;
+    return _post(ApiConfig.auditResults, data: data);
   }
 
   Future<Map<String, dynamic>> getAllAuditResults({
     int limit = 50,
     int offset = 0,
   }) async {
-    final response = await _dio.get(
+    return _get(
       ApiConfig.auditResults,
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    return response.data;
   }
 }

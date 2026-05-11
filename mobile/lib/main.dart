@@ -97,9 +97,44 @@ class AdminHome extends StatefulWidget {
 class _AdminHomeState extends State<AdminHome> {
   Map<String, dynamic>? _currentResult;
 
-  void _onResult(Map<String, dynamic> result) {
-    setState(() {
-      _currentResult = result;
+  void _onResult(Map<String, dynamic> result, BuildContext context) {
+    print('[DEBUG] _onResult called with keys: ${result.keys.toList()}');
+
+    if (!mounted) {
+      print('[WARN] _onResult: widget already unmounted, ignoring');
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        print('[WARN] _onResult: widget unmounted after postFrameCallback');
+        return;
+      }
+      try {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResultScreen(
+              result: result,
+              onNewAudit: () {
+                Navigator.pop(context);
+              },
+              onViewHistory: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/history');
+              },
+            ),
+          ),
+        ).catchError((e) {
+          print('[ERROR] Navigation error: $e');
+        });
+      } catch (e, stack) {
+        print('[ERROR] _onResult error: $e');
+        print('[ERROR] Stack: $stack');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Navigation error: $e')),
+        );
+      }
     });
   }
 
@@ -122,7 +157,7 @@ class _AdminHomeState extends State<AdminHome> {
     }
 
     return UploadScreen(
-      onResult: _onResult,
+      onResult: (result) => _onResult(result, context),
       onLogout: () async {
         final auth = context.read<AuthProvider>();
         await auth.logout();

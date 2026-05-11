@@ -33,6 +33,20 @@ class _UploadScreenState extends State<UploadScreen> {
   final List<String> _programs = ['BSCSE', 'BSEEE', 'LLB'];
   final List<int> _levels = [1, 2, 3];
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCancelled();
+    });
+  }
+
+  bool _isCancelled = false;
+
+  void _checkCancelled() {
+    if (_isCancelled || !mounted) return;
+  }
+
   Future<void> _pickCsvFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -119,6 +133,8 @@ class _UploadScreenState extends State<UploadScreen> {
       return;
     }
 
+    if (!mounted) return;
+
     setState(() {
       _isUploading = true;
       _errorMessage = null;
@@ -151,19 +167,59 @@ class _UploadScreenState extends State<UploadScreen> {
         );
       }
 
+      if (!mounted) return;
+
+      if (result == null || result.isEmpty) {
+        setState(() {
+          _errorMessage =
+              'Received empty response from server. Please try again.';
+          _isUploading = false;
+        });
+        return;
+      }
+
+      final scanId = result['scan_id'];
+      if (scanId == null || scanId.toString().isEmpty) {
+        setState(() {
+          _errorMessage =
+              'Invalid response: missing scan_id. Server returned: $result';
+          _isUploading = false;
+        });
+        return;
+      }
+
       widget.onResult(result);
-    } catch (e) {
-      final errorStr = e.toString();
-      if (errorStr.contains('403') ||
-          errorStr.contains('Admin access required')) {
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 403 || e.message.contains('Admin access required')) {
         widget.onLogout();
         return;
       }
       setState(() {
-        _errorMessage = errorStr;
+        _errorMessage = e.message;
+        _isUploading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = _sanitizeError(e.toString());
         _isUploading = false;
       });
     }
+  }
+
+  String _sanitizeError(String error) {
+    String msg = error;
+    if (msg.contains('Exception: ')) {
+      msg = msg.replaceFirst('Exception: ', '');
+    }
+    if (msg.contains('ApiException: ')) {
+      msg = msg.replaceFirst(RegExp(r'ApiException: \d+ - '), '');
+    }
+    if (msg.length > 200) {
+      msg = msg.substring(0, 200) + '...';
+    }
+    return msg;
   }
 
   @override
@@ -199,8 +255,6 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Input Type Selection
             const Text(
               'Input Type',
               style: TextStyle(fontWeight: FontWeight.w500),
@@ -251,8 +305,6 @@ class _UploadScreenState extends State<UploadScreen> {
                 ),
               ],
             ),
-
-            // Selected File Display
             if (_selectedFile != null) ...[
               const SizedBox(height: 16),
               Container(
@@ -277,10 +329,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 ),
               ),
             ],
-
             const SizedBox(height: 24),
-
-            // Program Selection
             const Text(
               'Program',
               style: TextStyle(fontWeight: FontWeight.w500),
@@ -303,10 +352,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Audit Level Selection
             const Text(
               'Audit Level',
               style: TextStyle(fontWeight: FontWeight.w500),
@@ -329,10 +375,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Waivers
             const Text(
               'Waivers (comma-separated)',
               style: TextStyle(fontWeight: FontWeight.w500),
@@ -348,26 +391,39 @@ class _UploadScreenState extends State<UploadScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Error Message
             if (_errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
                 ),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                      ),
+                    ),
+                    IconButton(
+                      icon:
+                          const Icon(Icons.close, color: Colors.red, size: 18),
+                      onPressed: () => setState(() => _errorMessage = null),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
             ],
-
-            // Submit Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -376,15 +432,49 @@ class _UploadScreenState extends State<UploadScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1E3A5F),
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      const Color(0xFF1E3A5F).withOpacity(0.5),
                 ),
                 child: _isUploading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Processing...',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      )
+                    : Text(
                         'Run Audit',
-                        style: TextStyle(fontSize: 16),
+                        style: const TextStyle(fontSize: 16),
                       ),
               ),
             ),
+            if (_isUploading) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  _inputType == 'csv'
+                      ? 'Running audit on CSV data...'
+                      : 'Processing PDF/Image with OCR, then running audit...\nThis may take up to 30 seconds.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
